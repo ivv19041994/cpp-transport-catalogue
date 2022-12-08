@@ -7,76 +7,84 @@
 #include <memory>
 #include <list>
 #include <set>
+#include <map>
 
 
 #include "geo.h"
 
 namespace transport {
-	class Stop;
-	class Bus;
+	struct Stop;
+	struct Bus;
 	class TransportCatalogue;
 
-	class Bus {
-	public:
+	using ConteinerOfStopPointers = std::list<Stop*>;
 
-		Bus(std::string name, bool circular);
-
-		const std::string& GetName() const;
-		void AddStop(Stop& stop);//возможно стоит спрятать в private и дать доступ только через TransportCatalogue (к тому же он уже и так friend)
-		size_t GetStopsCount() const;
-		size_t GetUniqueStopsCount() const;
-		double GetGeoLength() const;
-		size_t GetLength() const;
-
-	private:
-		friend class TransportCatalogue;
+	struct Bus {
 		std::string name_;
 		bool circular_;
-		std::list<Stop*> stops_;
-		std::unordered_set<std::string_view> stops_names_;
-
-		
+		ConteinerOfStopPointers stops_;
+		std::unordered_set<Stop*> stops_set_;
 	};
 
-	class Stop {
-	public:
-		Stop(std::string name, double latitude, double longitude);
-		const std::string& GetName() const;
-		double GetLatitude() const;
-		double GetLongitude() const;
-		geo::Coordinates GetCoordinates() const;
-
-		void AddLengthTo(const Stop& other, size_t length);
-		void AddIfNotSetLengthTo(const Stop& other, size_t length);
-		size_t GetLengthTo(const Stop& other) const;
-
-		std::set<std::string> GetBuses() const;
-		void AddBus(Bus& bus);//возможно стоит спрятать в private и дать доступ только через TransportCatalogue
-
-	private:
+	struct Stop {
 		std::string name_;
 		geo::Coordinates coordinates_;
-		std::list<Bus*> buses_;
-		std::unordered_map<const Stop*, size_t> length_to_;
+		std::unordered_set<Bus*> buses_;
+	};
+
+	template <typename Pointer>
+	struct PairPointerHasher {
+		size_t operator() (const std::pair<Pointer, Pointer>& f) const {
+			return reinterpret_cast<size_t>(f.first)  + reinterpret_cast<size_t>(f.second) * 977;
+		}
 	};
 
 	class TransportCatalogue {
 	public:
-		void AddBus(Bus bus);
-		void AddStopToBus(const std::string_view& stop, const std::string_view& bus);
-		const Bus& GetBus(const std::string_view bus_name) const;
-		//Route& GetRoute(const std::string_view route_name);
+		template<typename It>
+		void AddBus(std::string name, bool circular, It begin_stops, It end_stops);
+		const Bus* GetBus(const std::string_view bus_name) const;
+		size_t GetStopsCount(const Bus* bus) const;
+		size_t GetUniqueStopsCount(const Bus* bus) const;
+		double GetGeoLength(const Bus* bus) const;
+		size_t GetLength(const Bus* bus) const;
 
 		void AddStop(Stop stop);
-		const Stop& GetStop(const std::string_view stop_name) const;
-		Stop& GetStop(const std::string_view stop_name);
-		void SetLengthBetweenStops(Stop& from, Stop& to, size_t length);
-		//std::shared_ptr<Stop> GetStopPtr(const std::string_view stop_name);
+		const Stop* GetStop(const std::string_view stop_name) const;
+		std::set<std::string> GetBusesNamesFromStop(const Stop*) const;
+		size_t GetLengthFromTo(const Stop* from, const Stop* to) const;
+
+
+		void SetLengthBetweenStops(const std::unordered_map<std::string, std::unordered_map<std::string, size_t>>& length_from_to);
 
 
 	private:
 		std::unordered_map<std::string_view, std::shared_ptr<Stop>> stops_;
 		std::unordered_map<std::string_view, std::shared_ptr<Bus>> buses_;
+		std::unordered_map<std::pair<const Stop*, const Stop*>, size_t, PairPointerHasher<const Stop*>> length_from_to_;
 	};
+
+	template<typename It>
+	void TransportCatalogue::AddBus(std::string name, bool circular, It begin_stops, It end_stops) {
+		ConteinerOfStopPointers stops;
+
+		for (; begin_stops != end_stops; ++begin_stops) {
+			stops.push_back(stops_[*begin_stops].get());
+		}
+
+		std::unordered_set<Stop*> stops_set{ stops.begin(), stops.end()};
+        
+        Bus bus{
+            std::move(name), circular, std::move(stops), std::move(stops_set)
+        };
+
+		std::shared_ptr<Bus> spbus = std::make_shared<Bus>(std::move(bus));
+
+		buses_[spbus->name_] = spbus;
+		Bus* pbus = spbus.get();
+		for (Stop* pstop : spbus->stops_set_) {
+			pstop->buses_.insert(pbus);
+		}
+	}
 }
 

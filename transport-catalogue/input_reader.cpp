@@ -20,75 +20,79 @@ static string trim(const std::string& s) {
 	return s.substr(start, end - start + 1);
 }
 
-static void s_addStop(istream& is, TransportCatalogue& transport_catalogue, unordered_map<string, unordered_map<string, size_t>>& length_from_to) {
+static pair<string, size_t> ParsingName(const string& body, size_t pos = 0) {
+	size_t name_end = body.find(':', pos);
+	auto ret = body.substr(1, name_end - 1);
+	++name_end;
+	return {move(ret), name_end };
+}
+
+static pair<geo::Coordinates, size_t> ParsingCoordinates(const string& body, size_t pos = 0) {
+	size_t end_lat = body.find(',', pos);
+	geo::Coordinates coordinates;
+	coordinates.lat = stod(body.substr(pos, end_lat - pos));
+	++end_lat;
+	size_t end_lon = body.find(',', end_lat);
+
+	coordinates.lng = (end_lon == string::npos) ? stod(body.substr(end_lat)) : stod(body.substr(end_lat, end_lon - end_lat));
+	return { coordinates, end_lon };
+}
+
+static void ParsingStop(istream& is, TransportCatalogue& transport_catalogue, unordered_map<string, unordered_map<string, size_t>>& length_from_to) {
 	
 	string temp;
 	getline(is, temp);
 
-	size_t name_end = temp.find(':');
-	auto stop_name = temp.substr(1, name_end - 1);
-	++name_end;
-	size_t end_lat = temp.find(',', name_end);
-	auto stop_latitude = stod(temp.substr(name_end, end_lat - name_end));
-    ++end_lat;
-    size_t end_lon = temp.find(',', end_lat);
-    
-	auto stop_longitude = (end_lon == string::npos) ? stod(temp.substr(end_lat)) : stod(temp.substr(end_lat, end_lon - end_lat));
-    
+	auto name_pos = ParsingName(temp);
+	auto coordinates_pos = ParsingCoordinates(temp, name_pos.second);
+
+	size_t& end_lon = coordinates_pos.second;
     if(end_lon != string::npos) {
         end_lon += 2;
 
         size_t length = end_lon;
         size_t length_end;
         for(;;) {
-
-            //cout << "for(;;) " << temp.substr(length) << endl;
-
             length_end = temp.find(',', length);
             if(length_end == string::npos) length_end = temp.size();
             size_t end_digit = temp.find("m to ", length);
-            //cout << "stol " << temp.substr(length, end_digit - length) << endl;
             size_t len = stol(temp.substr(length, end_digit - length));
             end_digit += 5;
-            //cout << "length_from_to[" << stop_name << "][" << trim(temp.substr(end_digit, length_end - end_digit)) << "] = " << len << endl;
-            length_from_to[stop_name][trim(temp.substr(end_digit, length_end - end_digit))] = len;
+            length_from_to[name_pos.first][trim(temp.substr(end_digit, length_end - end_digit))] = len;
             if(length_end == temp.size()) {
                 break;
             }
             length = length_end + 1;
         }
     }
-	//cout << stop.name_ << " " << setprecision(8) << stop.latitude_ << " " << setprecision(8) << stop.longitude_ << endl;
-	transport_catalogue.AddStop(Stop{move(stop_name), stop_latitude, stop_longitude});
+	transport_catalogue.AddStop(Stop{move(name_pos.first), coordinates_pos.first, {}});
 }
 
-static void s_addBus(string& bus_string, TransportCatalogue& transport_catalogue) {
-	auto name_end = bus_string.find(':');
-	string bus_name = bus_string.substr(1, name_end - 1);
-	++name_end;
+static void ParsingBus(string& bus_string, TransportCatalogue& transport_catalogue) {
+	auto name_pos = ParsingName(bus_string);
 	char symbol = '>';
-	auto first_stop_end = bus_string.find(symbol, name_end);
+	auto first_stop_end = bus_string.find(symbol, name_pos.second);
 	bool bus_circular;
 	if (first_stop_end == string::npos) {
 		symbol = '-';
-		first_stop_end = bus_string.find(symbol, name_end);
+		first_stop_end = bus_string.find(symbol, name_pos.second);
 		bus_circular = false;
 	} else {
 		bus_circular = true;
 	}
 
-	Bus bus(move(bus_name), bus_circular);
+	list<string> stop_names;
 
-	bus.AddStop(transport_catalogue.GetStop(trim(bus_string.substr(name_end, first_stop_end - name_end))));
+	stop_names.push_back(trim(bus_string.substr(name_pos.second, first_stop_end - name_pos.second)));
 
 	for (auto left = first_stop_end; left != string::npos;) {
 		++left;
 		auto end_of_stop = bus_string.find(symbol, left);
-		bus.AddStop(transport_catalogue.GetStop(trim(bus_string.substr(left, end_of_stop == string::npos ? string::npos : end_of_stop - left))));
+		stop_names.push_back(trim(bus_string.substr(left, end_of_stop == string::npos ? string::npos : end_of_stop - left)));
 		left = end_of_stop;
 	}
 
-	transport_catalogue.AddBus(move(bus));
+	transport_catalogue.AddBus(move(name_pos.first), bus_circular, stop_names.begin(), stop_names.end());
 }
 
 istream& transport::iostream::InputReader(istream& is, TransportCatalogue& transport_catalogue) {
@@ -103,7 +107,7 @@ istream& transport::iostream::InputReader(istream& is, TransportCatalogue& trans
 		is >> type;
 
 		if (type == "Stop") {
-			s_addStop(is, transport_catalogue, length_from_to);
+			ParsingStop(is, transport_catalogue, length_from_to);
 		} else {
 			string temp;
 			getline(is, temp);
@@ -112,17 +116,10 @@ istream& transport::iostream::InputReader(istream& is, TransportCatalogue& trans
 	}
 
 	for (auto& bus: buses) {
-		s_addBus(bus, transport_catalogue);
+		ParsingBus(bus, transport_catalogue);
 	}
+
+	transport_catalogue.SetLengthBetweenStops(length_from_to);
     
-    for(auto& [from, val] : length_from_to) {
-        auto& from_stop = transport_catalogue.GetStop(from);
-        for(auto& [to, len]: val) {
-            //cout << "from " << from << " to " << to << " = " << len << endl;
-            transport_catalogue.SetLengthBetweenStops(from_stop, transport_catalogue.GetStop(to), len);
-        }
-    }
-
-
 	return is;
 }

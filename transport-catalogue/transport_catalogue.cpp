@@ -12,168 +12,116 @@
 using namespace std;
 
 namespace transport {
+
 	void TransportCatalogue::AddStop(Stop stop) {
-		shared_ptr pstop = make_shared<Stop>(move(stop));
-		string_view name = pstop->GetName();
-		stops_.try_emplace(name, pstop);
+		auto pstop = make_shared<Stop>(move(stop));
+		stops_[pstop->name_] = pstop;
 	}
 
-	void TransportCatalogue::AddBus(Bus bus) {
-		shared_ptr pbus = make_shared<Bus>(move(bus));
-		string_view name = pbus->GetName();
-		buses_.try_emplace(name, pbus);
-		for (auto& stop : pbus->stops_) {
-			stop->AddBus(*pbus);
-		}
-	}
-	
-	void TransportCatalogue::AddStopToBus(const string_view& stop, const string_view& bus) {
-		buses_[bus]->AddStop(*stops_[stop]);
-	}
-
-	Bus::Bus(std::string name, bool circular) : name_{ move(name) }, circular_{ circular } {
-
-	}
-
-	void Bus::AddStop(Stop& stop) {
-		stops_.push_back(&stop);
-		stops_names_.insert(stop.GetName());
-	}
-
-	void Stop::AddBus(Bus& bus) {
-		buses_.push_back(&bus);
-	}
-
-	set<string> Stop::GetBuses() const {
+	set<string> TransportCatalogue::GetBusesNamesFromStop(const Stop* stop) const {
 		set<string> ret;
-		for (auto bus : buses_) {
-			ret.insert(bus->GetName());
+
+		for (auto bus : stop->buses_) {
+			ret.insert(bus->name_);
 		}
 		return ret;
 	}
 
-	const std::string& Bus::GetName() const {
-		return name_;
+	size_t TransportCatalogue::GetStopsCount(const Bus *bus) const {
+		return bus->circular_ ? bus->stops_.size() : bus->stops_.size() * 2 - 1;
 	}
 
-	size_t Bus::GetStopsCount() const {
-		return circular_ ? stops_.size() : stops_.size() * 2 - 1;
+	size_t TransportCatalogue::GetUniqueStopsCount(const Bus* bus) const {
+		return bus->stops_set_.size();
 	}
 
-	size_t Bus::GetUniqueStopsCount() const {
-		return stops_names_.size();
-	}
-
-	double Bus::GetGeoLength() const {
+	double TransportCatalogue::GetGeoLength(const Bus* bus) const {
 		double res = transform_reduce(
-			++stops_.begin(), stops_.end(),
-			stops_.begin(),
+			++bus->stops_.begin(), bus->stops_.end(),
+			bus->stops_.begin(),
 			0.0,
 			plus<>(),
 			[](const auto& lhs, const auto& rhs) {
-				return ComputeDistance(lhs->GetCoordinates(), rhs->GetCoordinates());
+				return ComputeDistance(lhs->coordinates_, rhs->coordinates_);
 			}
 		);
 
-		return circular_ ? res : res * 2;
+		return bus->circular_ ? res : res * 2;
 	}
 
-	size_t Bus::GetLength() const {
-		size_t res = 0;
-
-		auto get_length_to = [](const auto& lhs, const auto& rhs) {
-			return rhs->GetLengthTo(*lhs);
-		};
-
-		res = transform_reduce(
-			++stops_.begin(), stops_.end(),
-			stops_.begin(),
-			res,
-			plus<>(),
-			get_length_to
-		);
-
-		Stop& first = *stops_.front();
-		res += first.GetLengthTo(first);
-		if (circular_) {
-			return res;
-		}
-
-		Stop& last = *stops_.back();
-		res += last.GetLengthTo(last);
-
-		res = transform_reduce(
-			++stops_.rbegin(), stops_.rend(),
-			stops_.rbegin(),
-			res,
-			plus<>(),
-			get_length_to
-		);
-
-
-		return res;
-	}
-
-	Stop::Stop(std::string name, double latitude, double longitude) :
-		name_{ move(name) }, coordinates_{ latitude, longitude } {
-	}
-
-	const std::string& Stop::GetName() const {
-		return name_;
-	}
-
-	double Stop::GetLatitude() const {
-		return coordinates_.lat;
-	}
-
-	double Stop::GetLongitude() const {
-		return coordinates_.lng;
-	}
-
-	geo::Coordinates Stop::GetCoordinates() const {
-		return coordinates_;
-	}
-
-	const Bus& TransportCatalogue::GetBus(const std::string_view route_name) const {
-		auto at = buses_.at(route_name);
-		return *at;
-	}
-
-	const Stop& TransportCatalogue::GetStop(const std::string_view stop_name) const {
-		auto at = stops_.at(stop_name);
-		return *at;
-	}
-
-	Stop& TransportCatalogue::GetStop(const std::string_view stop_name) {
-		auto at = stops_.at(stop_name);
-		return *at;
-	}
-
-	void Stop::AddLengthTo(const Stop& other, size_t length) {
-		length_to_[&other] = length;
-	}
-
-	void Stop::AddIfNotSetLengthTo(const Stop& other, size_t length) {
+	size_t TransportCatalogue::GetLengthFromTo(const Stop* from, const Stop* to) const {
 		try {
-			length_to_.at(&other);
-		}
-		catch (const out_of_range&) {
-			length_to_[&other] = length;
-		}
-	}
-
-	size_t Stop::GetLengthTo(const Stop& other) const {
-		try {
-			return length_to_.at(&other);
+			return length_from_to_.at({ from, to });
 		}
 		catch (const out_of_range& e) {
 			return 0;
 		}
 	}
 
-	void TransportCatalogue::SetLengthBetweenStops(Stop& from, Stop& to, size_t length) {
-		from.AddLengthTo(to, length);
-		to.AddIfNotSetLengthTo(from, length);
+	size_t TransportCatalogue::GetLength(const Bus* bus) const {
+		size_t res = 0;
+
+		auto get_length_to = [this](const auto& lhs, const auto& rhs) {
+			return this->GetLengthFromTo(rhs, lhs);
+		};
+
+		res = transform_reduce(
+			++bus->stops_.begin(), bus->stops_.end(),
+			bus->stops_.begin(),
+			res,
+			plus<>(),
+			get_length_to
+		);
+
+		Stop* first = bus->stops_.front();
+		res += GetLengthFromTo(first, first);
+		if (bus->circular_) {
+			return res;
+		}
+
+		Stop* last = bus->stops_.back();
+		res += GetLengthFromTo(last, last);
+
+		res = transform_reduce(
+			++bus->stops_.rbegin(), bus->stops_.rend(),
+			bus->stops_.rbegin(),
+			res,
+			plus<>(),
+			get_length_to
+		);
+
+		return res;
+	}
+
+	const Bus* TransportCatalogue::GetBus(const std::string_view route_name) const {
+		if(buses_.count(route_name) == 0) {
+            return nullptr;
+        }
+
+		return buses_.at(route_name).get();
+	}
+
+	const Stop* TransportCatalogue::GetStop(const std::string_view stop_name) const {
+		if(stops_.count(stop_name) == 0) {
+            return nullptr;
+        }
+
+		return stops_.at(stop_name).get();
+	}
+
+	void TransportCatalogue::SetLengthBetweenStops(const std::unordered_map<std::string, std::unordered_map<std::string, size_t>>& length_from_to) {
+		
+		for (auto& [from, to_map] : length_from_to) {
+			Stop* pfrom = stops_[from].get();
+			for (auto& [to, length] : to_map) {
+				Stop* pto = stops_[to].get();
+				length_from_to_[{pfrom, pto}] = length;
+				pair pto_pfrom = { pto, pfrom };
+				if (length_from_to_.count(pto_pfrom) == 0) {
+					length_from_to_[pto_pfrom] = length;
+				}
+			}
+		}
 	}
 }
 
