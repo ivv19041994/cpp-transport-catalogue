@@ -9,6 +9,8 @@
 #include <set>
 #include <map>
 #include <deque>
+#include <functional>
+#include <iostream>
 
 
 #include "geo.h"
@@ -36,7 +38,7 @@ namespace transport {
 	template <typename Pointer>
 	struct PairPointerHasher {
 		size_t operator() (const std::pair<Pointer, Pointer>& f) const {
-			static constexpr hash<Pointer> hasher;
+			static constexpr std::hash<Pointer> hasher;
 			return hasher(f.first) + hasher(f.second) * 977;
 		}
 	};
@@ -76,7 +78,6 @@ namespace transport {
 		for (auto& name : stop_names) {
 			stops.push_back(stops_[name]);
 		}
-
 		std::unordered_set<Stop*> stops_set{ stops.begin(), stops.end() };
 
 		Bus bus{

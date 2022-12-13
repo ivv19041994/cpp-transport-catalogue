@@ -11,9 +11,11 @@ namespace json {
 void InputStatReader(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue) {
 	Document document = Load(is);
 	const Node& root = document.GetRoot();
+    //throw std::runtime_error(Print(root));
 
 	InputReader(root.AsMap().at("base_requests"), transport_catalogue);
 	StatReader(root.AsMap().at("stat_requests"), transport_catalogue).Print(os);
+    
 }
 
 std::istream& InputReader(std::istream& is, transport::TransportCatalogue& transport_catalogue) {
@@ -78,7 +80,7 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	//		"name" : "14"
 	//}
 	Dict result;
-	result["id"] = request.at("id");
+	result["request_id"] = request.at("id");
 
 	const Bus* bus = transport_catalogue.GetBus(request.at("name").AsString());
 	if (!bus) {
@@ -110,10 +112,10 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	//{
 	//	"id": 12345,
 	//		"type" : "Stop",
-	//		"name" : "Улица Докучаева"
+	//		"name" : "РЈР»РёС†Р° Р”РѕРєСѓС‡Р°РµРІР°"
 	//}
 	Dict result;
-	result["id"] = request.at("id");
+	result["request_id"] = request.at("id");
 
 	const Stop* stop = transport_catalogue.GetStop(request.at("name").AsString());
 	if (!stop) {
@@ -126,7 +128,7 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	}
 	//{
 	//	"buses": [
-	//		"14", "22к"
+	//		"14", "22Рє"
 	//	] ,
 	//		"request_id" : 12345
 	//}

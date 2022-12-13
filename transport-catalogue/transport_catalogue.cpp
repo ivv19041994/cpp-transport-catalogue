@@ -16,8 +16,8 @@ namespace transport {
 
 
 	void TransportCatalogue::AddStop(std::string name, geo::Coordinates coordinates) {
-		stops_storage_.push_back(Stop(move(name), move(coordinates)));
-		//auto pstop = make_shared<Stop>(move(name), move(coordinates));
+        
+		stops_storage_.push_back(Stop{move(name), move(coordinates)});
 		Stop* pstop = &stops_storage_.back();
 		stops_[pstop->name_] = pstop;
 		buses_of_stop_[pstop];
