@@ -65,7 +65,7 @@ static void ParsingStop(istream& is, TransportCatalogue& transport_catalogue, un
             length = length_end + 1;
         }
     }
-	transport_catalogue.AddStop(Stop{move(name_pos.first), coordinates_pos.first, {}});
+	transport_catalogue.AddStop(move(name_pos.first), move(coordinates_pos.first));
 }
 
 static void ParsingBus(string& bus_string, TransportCatalogue& transport_catalogue) {
@@ -92,7 +92,7 @@ static void ParsingBus(string& bus_string, TransportCatalogue& transport_catalog
 		left = end_of_stop;
 	}
 
-	transport_catalogue.AddBus(move(name_pos.first), bus_circular, stop_names.begin(), stop_names.end());
+	transport_catalogue.AddBus(move(name_pos.first), bus_circular, stop_names);
 }
 
 istream& transport::iostream::InputReader(istream& is, TransportCatalogue& transport_catalogue) {

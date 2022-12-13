@@ -8,6 +8,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include <deque>
 
 
 #include "geo.h"
@@ -29,27 +30,28 @@ namespace transport {
 	struct Stop {
 		std::string name_;
 		geo::Coordinates coordinates_;
-		std::unordered_set<Bus*> buses_;
+		//std::unordered_set<Bus*> buses_;
 	};
 
 	template <typename Pointer>
 	struct PairPointerHasher {
 		size_t operator() (const std::pair<Pointer, Pointer>& f) const {
-			return reinterpret_cast<size_t>(f.first)  + reinterpret_cast<size_t>(f.second) * 977;
+			static constexpr hash<Pointer> hasher;
+			return hasher(f.first) + hasher(f.second) * 977;
 		}
 	};
 
 	class TransportCatalogue {
 	public:
-		template<typename It>
-		void AddBus(std::string name, bool circular, It begin_stops, It end_stops);
+		template<typename Container>
+		void AddBus(std::string name, bool circular, const Container& stop_names);
 		const Bus* GetBus(const std::string_view bus_name) const;
 		size_t GetStopsCount(const Bus* bus) const;
 		size_t GetUniqueStopsCount(const Bus* bus) const;
 		double GetGeoLength(const Bus* bus) const;
 		size_t GetLength(const Bus* bus) const;
 
-		void AddStop(Stop stop);
+		void AddStop(std::string name, geo::Coordinates coordinates);
 		const Stop* GetStop(const std::string_view stop_name) const;
 		std::set<std::string> GetBusesNamesFromStop(const Stop*) const;
 		size_t GetLengthFromTo(const Stop* from, const Stop* to) const;
@@ -59,32 +61,40 @@ namespace transport {
 
 
 	private:
-		std::unordered_map<std::string_view, std::shared_ptr<Stop>> stops_;
-		std::unordered_map<std::string_view, std::shared_ptr<Bus>> buses_;
+		std::deque<Bus> buses_storage_;
+		std::deque<Stop> stops_storage_;
+		std::unordered_map<std::string_view, Stop*> stops_;
+		std::unordered_map<std::string_view, Bus*> buses_;
 		std::unordered_map<std::pair<const Stop*, const Stop*>, size_t, PairPointerHasher<const Stop*>> length_from_to_;
+		std::unordered_map<const Stop*, std::unordered_set<Bus*>> buses_of_stop_;
 	};
 
-	template<typename It>
-	void TransportCatalogue::AddBus(std::string name, bool circular, It begin_stops, It end_stops) {
+	template<typename Container>
+	void TransportCatalogue::AddBus(std::string name, bool circular, const Container& stop_names) {
 		ConteinerOfStopPointers stops;
 
-		for (; begin_stops != end_stops; ++begin_stops) {
-			stops.push_back(stops_[*begin_stops].get());
+		for (auto& name : stop_names) {
+			stops.push_back(stops_[name]);
 		}
 
-		std::unordered_set<Stop*> stops_set{ stops.begin(), stops.end()};
-        
-        Bus bus{
-            std::move(name), circular, std::move(stops), std::move(stops_set)
-        };
+		std::unordered_set<Stop*> stops_set{ stops.begin(), stops.end() };
 
-		std::shared_ptr<Bus> spbus = std::make_shared<Bus>(std::move(bus));
+		Bus bus{
+			std::move(name), circular, std::move(stops), std::move(stops_set)
+		};
 
-		buses_[spbus->name_] = spbus;
-		Bus* pbus = spbus.get();
-		for (Stop* pstop : spbus->stops_set_) {
-			pstop->buses_.insert(pbus);
+		buses_storage_.push_back(std::move(bus));
+		Bus* pbus = &buses_storage_.back();
+
+		//std::shared_ptr<Bus> spbus = std::make_shared<Bus>(std::move(bus));
+
+		buses_[pbus->name_] = pbus;
+		//Bus* pbus = spbus.get();
+		for (Stop* pstop : pbus->stops_set_) {
+			buses_of_stop_[pstop].insert(pbus);
 		}
 	}
+
+
 }
 

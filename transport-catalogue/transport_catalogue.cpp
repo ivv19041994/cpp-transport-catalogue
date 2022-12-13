@@ -13,15 +13,20 @@ using namespace std;
 
 namespace transport {
 
-	void TransportCatalogue::AddStop(Stop stop) {
-		auto pstop = make_shared<Stop>(move(stop));
+
+
+	void TransportCatalogue::AddStop(std::string name, geo::Coordinates coordinates) {
+		stops_storage_.push_back(Stop(move(name), move(coordinates)));
+		//auto pstop = make_shared<Stop>(move(name), move(coordinates));
+		Stop* pstop = &stops_storage_.back();
 		stops_[pstop->name_] = pstop;
+		buses_of_stop_[pstop];
 	}
 
 	set<string> TransportCatalogue::GetBusesNamesFromStop(const Stop* stop) const {
 		set<string> ret;
 
-		for (auto bus : stop->buses_) {
+		for (auto bus : buses_of_stop_.at(stop)) {
 			ret.insert(bus->name_);
 		}
 		return ret;
@@ -98,7 +103,7 @@ namespace transport {
             return nullptr;
         }
 
-		return buses_.at(route_name).get();
+		return buses_.at(route_name);
 	}
 
 	const Stop* TransportCatalogue::GetStop(const std::string_view stop_name) const {
@@ -106,15 +111,15 @@ namespace transport {
             return nullptr;
         }
 
-		return stops_.at(stop_name).get();
+		return stops_.at(stop_name);
 	}
 
 	void TransportCatalogue::SetLengthBetweenStops(const std::unordered_map<std::string, std::unordered_map<std::string, size_t>>& length_from_to) {
 		
 		for (auto& [from, to_map] : length_from_to) {
-			Stop* pfrom = stops_[from].get();
+			Stop* pfrom = stops_[from];
 			for (auto& [to, length] : to_map) {
-				Stop* pto = stops_[to].get();
+				Stop* pto = stops_[to];
 				length_from_to_[{pfrom, pto}] = length;
 				pair pto_pfrom = { pto, pfrom };
 				if (length_from_to_.count(pto_pfrom) == 0) {
