@@ -1,13 +1,25 @@
 #pragma once
+#include <string>
+#include <list>
+#include <unordered_set>
 
-/*
- * В этом файле вы можете разместить классы/структуры, которые являются частью предметной области (domain)
- * вашего приложения и не зависят от транспортного справочника. Например Автобусные маршруты и Остановки. 
- *
- * Их можно было бы разместить и в transport_catalogue.h, однако вынесение их в отдельный
- * заголовочный файл может оказаться полезным, когда дело дойдёт до визуализации карты маршрутов:
- * визуализатор карты (map_renderer) можно будет сделать независящим от транспортного справочника.
- *
- * Если структура вашего приложения не позволяет так сделать, просто оставьте этот файл пустым.
- *
- */
+#include "geo.h"
+namespace transport {
+	struct Stop {
+		std::string name_;
+		geo::Coordinates coordinates_;
+	};
+
+	using ConteinerOfStopPointers = std::list<Stop*>;
+
+	struct Bus {
+		std::string name_;
+		bool circular_;
+		ConteinerOfStopPointers stops_;
+		std::unordered_set<Stop*> stops_set_;
+	};
+
+	double ComputeDistance(const Stop*, const Stop*);
+
+
+}//namespace transport

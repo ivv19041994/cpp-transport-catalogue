@@ -2,18 +2,13 @@
 
 #include <numeric>
 #include <stdexcept>
-
-
-#include "geo.h"
-
-
-
-
 using namespace std;
 
 namespace transport {
 
-
+	const std::unordered_set<Bus*>* TransportCatalogue::GetBusesByStop(const Stop* pstop) const {
+		return &buses_of_stop_.at(pstop);
+	}
 
 	void TransportCatalogue::AddStop(std::string name, geo::Coordinates coordinates) {
         
@@ -46,9 +41,7 @@ namespace transport {
 			bus->stops_.begin(),
 			0.0,
 			plus<>(),
-			[](const auto& lhs, const auto& rhs) {
-				return ComputeDistance(lhs->coordinates_, rhs->coordinates_);
-			}
+			ComputeDistance
 		);
 
 		return bus->circular_ ? res : res * 2;

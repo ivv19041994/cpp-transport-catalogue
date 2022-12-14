@@ -1,5 +1,7 @@
 #include "json_reader.h"
 
+#include "request_handler.h"
+
 namespace transport {
 namespace json {
 	using namespace std;
@@ -68,12 +70,14 @@ void InputReader(const Node& input_node, transport::TransportCatalogue& transpor
 	transport_catalogue.SetLengthBetweenStops(length_from_to);
 }
 
-void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transport_catalogue) {
+void StatReader(std::istream& is, std::ostream& os, const TransportCatalogue& transport_catalogue) {
 	Document document = Load(is);
 	StatReader(document.GetRoot(), transport_catalogue).Print(os);
 }
 
-::json::Node BusRequest(const Dict& request, TransportCatalogue& transport_catalogue) {
+::json::Node BusRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
+
+	RequestHandler request_handler{ transport_catalogue };
 	//{
 	//	"id": 12345678,
 	//		"type" : "Bus",
@@ -82,8 +86,9 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	Dict result;
 	result["request_id"] = request.at("id");
 
-	const Bus* bus = transport_catalogue.GetBus(request.at("name").AsString());
-	if (!bus) {
+	auto request_result = request_handler.GetBusStat(request.at("name").AsString());
+
+	if (!request_result) {
 
 		//{
 		//	"request_id": 12345678,
@@ -100,15 +105,15 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	//		"stop_count" : 4,
 	//		"unique_stop_count" : 3
 	//}
-	auto route_length = transport_catalogue.GetLength(bus);
-	result["curvature"] = Node(route_length / transport_catalogue.GetGeoLength(bus));
-	result["route_length"] = Node(route_length);
-	result["stop_count"] = Node(transport_catalogue.GetStopsCount(bus));
-	result["unique_stop_count"] = Node(transport_catalogue.GetUniqueStopsCount(bus));
+	result["curvature"] = request_result->curvature;
+	result["route_length"] = request_result->route_length;
+	result["stop_count"] = request_result->stop_count;
+	result["unique_stop_count"] = request_result->unique_stop_count;
 	return Node(move(result));
 }
 
-::json::Node StopRequest(const Dict& request, TransportCatalogue& transport_catalogue) {
+::json::Node StopRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
+	RequestHandler request_handler{ transport_catalogue };
 	//{
 	//	"id": 12345,
 	//		"type" : "Stop",
@@ -117,8 +122,9 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	Dict result;
 	result["request_id"] = request.at("id");
 
-	const Stop* stop = transport_catalogue.GetStop(request.at("name").AsString());
-	if (!stop) {
+	auto request_result = request_handler.GetSortedBusesByStop(request.at("name").AsString());
+
+	if (!request_result) {
 		//{
 		//	"request_id": 12345,
 		//		"error_message" : "not found"
@@ -133,17 +139,16 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	//		"request_id" : 12345
 	//}
 	Array buses_array;
-	auto buses = transport_catalogue.GetBusesNamesFromStop(stop); //stop->buses_;
-	if (buses.size()) {
-		for (auto& name : buses) {
-			buses_array.push_back(Node(name));
-		}
+
+	for (auto& name : *request_result) {
+		buses_array.push_back(Node(std::string(name)));
 	}
+	
 	result["buses"] = Node(move(buses_array));
 	return Node(move(result));
 }
 
-::json::Node StatRequest(const Dict& request, TransportCatalogue& transport_catalogue) {
+::json::Node StatRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
 	auto& type = request.at("type");
 	if (type == "Bus"s) {
 		return BusRequest(request, transport_catalogue);
@@ -155,7 +160,7 @@ void StatReader(std::istream& is, std::ostream& os, TransportCatalogue& transpor
 	return ::json::Node{ Dict {} };
 }
 
-::json::Node StatReader(const ::json::Node& stat_node, TransportCatalogue& transport_catalogue) {
+::json::Node StatReader(const ::json::Node& stat_node, const TransportCatalogue& transport_catalogue) {
 	Array result{};
 	for (auto& request : stat_node.AsArray()) {
 		result.push_back(StatRequest(request.AsMap(), transport_catalogue));

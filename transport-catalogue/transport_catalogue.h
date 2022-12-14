@@ -13,28 +13,9 @@
 #include <iostream>
 
 
-#include "geo.h"
+#include "domain.h"
 
 namespace transport {
-	struct Stop;
-	struct Bus;
-	class TransportCatalogue;
-
-	using ConteinerOfStopPointers = std::list<Stop*>;
-
-	struct Bus {
-		std::string name_;
-		bool circular_;
-		ConteinerOfStopPointers stops_;
-		std::unordered_set<Stop*> stops_set_;
-	};
-
-	struct Stop {
-		std::string name_;
-		geo::Coordinates coordinates_;
-		//std::unordered_set<Bus*> buses_;
-	};
-
 	template <typename Pointer>
 	struct PairPointerHasher {
 		size_t operator() (const std::pair<Pointer, Pointer>& f) const {
@@ -57,7 +38,7 @@ namespace transport {
 		const Stop* GetStop(const std::string_view stop_name) const;
 		std::set<std::string> GetBusesNamesFromStop(const Stop*) const;
 		size_t GetLengthFromTo(const Stop* from, const Stop* to) const;
-
+		const std::unordered_set<Bus*>* GetBusesByStop(const Stop*) const;
 
 		void SetLengthBetweenStops(const std::unordered_map<std::string, std::unordered_map<std::string, size_t>>& length_from_to);
 

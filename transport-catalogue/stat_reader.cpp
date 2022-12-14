@@ -5,38 +5,45 @@
 #include <iostream>
 #include <iomanip>
 
+#include "request_handler.h"
+
 using namespace std;
 using namespace transport;
 
-static void BusRequest(ostream& os, TransportCatalogue& transport_catalogue, const string& body) {
+static void BusRequest(ostream& os, const TransportCatalogue& transport_catalogue, const string& body) {
 	string_view name = body.c_str() + 1;
 	os << "Bus " << name << ": ";
 
-	const Bus* bus = transport_catalogue.GetBus(name);
-	if (!bus) {
+	RequestHandler request_handler{ transport_catalogue };
+	auto request_result = request_handler.GetBusStat(name);
+	//const Bus* bus = transport_catalogue.GetBus(name);
+	if (!request_result) {
 		os << "not found" << endl;
 		return;
 	}
-	auto route_length = transport_catalogue.GetLength(bus);
-	os << transport_catalogue.GetStopsCount(bus) << " stops on route, "
-		<< transport_catalogue.GetUniqueStopsCount(bus) << " unique stops, "
-		<< route_length << " route length, "
-		<< setprecision(6) << (route_length / transport_catalogue.GetGeoLength(bus)) << " curvature" << endl;
+	//auto route_length = transport_catalogue.GetLength(bus);
+	os << request_result->stop_count << " stops on route, "
+		<< request_result->unique_stop_count << " unique stops, "
+		<< request_result->route_length << " route length, "
+		<< setprecision(6) << request_result->curvature << " curvature" << endl;
 }
 
-static void StopRequest(ostream& os, TransportCatalogue& transport_catalogue, const string& body) {
+static void StopRequest(ostream& os, const TransportCatalogue& transport_catalogue, const string& body) {
 	string_view name = body.c_str() + 1;
 	os << "Stop " << name << ": ";
 
-	const Stop* stop = transport_catalogue.GetStop(name);
-	if (!stop) {
+	RequestHandler request_handler{ transport_catalogue };
+	auto request_result = request_handler.GetSortedBusesByStop(name);
+
+	//const Stop* stop = transport_catalogue.GetStop(name);
+	if (!request_result) {
 		os << "not found" << endl;
 		return;
 	}
-	auto buses = transport_catalogue.GetBusesNamesFromStop(stop); //stop->buses_;
-	if (buses.size()) {
+	//auto buses = transport_catalogue.GetBusesNamesFromStop(stop); //stop->buses_;
+	if (request_result->size()) {
 		os << "buses";
-		for (auto& name : buses) {
+		for (auto& name : *request_result) {
 			os << " " << name;
 		}
 		os << endl;
@@ -47,7 +54,7 @@ static void StopRequest(ostream& os, TransportCatalogue& transport_catalogue, co
 
 }
 
-void transport::iostream::StatReader(istream& is, ostream& os, TransportCatalogue& transport_catalogue) {
+void transport::iostream::StatReader(istream& is, ostream& os, const TransportCatalogue& transport_catalogue) {
 	int n;
 	is >> n;
 	
