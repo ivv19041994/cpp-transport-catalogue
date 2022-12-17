@@ -64,6 +64,7 @@ public:
 
     
     std::ostream& Print(std::ostream& os) const;
+    std::string Print() const;
 
 private:
 };

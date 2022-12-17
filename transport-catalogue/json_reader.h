@@ -13,5 +13,7 @@ namespace transport {
 
 		void StatReader(std::istream& is, std::ostream& os, const TransportCatalogue& transport_catalogue);
 		::json::Node StatReader(const ::json::Node& stat_node, const TransportCatalogue& transport_catalogue);
+
+		std::ostream& RenderReader(std::ostream& os, const ::json::Node& render_node, const TransportCatalogue& transport_catalogue);
 	}
 }

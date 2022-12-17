@@ -121,6 +121,14 @@ namespace transport {
 			}
 		}
 	}
+
+	const std::deque<Stop>& TransportCatalogue::GetStops() const {
+		return stops_storage_;
+	}
+
+	const std::deque<Bus>& TransportCatalogue::GetBuses() const {
+		return buses_storage_;
+	}
 }
 
 

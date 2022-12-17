@@ -387,6 +387,12 @@ std::ostream& Node::Print(std::ostream& os) const {
     visit(NodePrinter{os}, *dynamic_cast<const json_variant*>(this));
     return os;
 }
+
+std::string Node::Print() const {
+    std::stringstream ret;
+    Print(ret);
+    return ret.str();
+}
     
 void Print(const Document& doc, std::ostream& output) {
     doc.GetRoot().Print(output);

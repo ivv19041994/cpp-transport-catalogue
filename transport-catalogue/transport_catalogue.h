@@ -33,6 +33,7 @@ namespace transport {
 		size_t GetUniqueStopsCount(const Bus* bus) const;
 		double GetGeoLength(const Bus* bus) const;
 		size_t GetLength(const Bus* bus) const;
+		const std::deque<Bus>& GetBuses() const;
 
 		void AddStop(std::string name, geo::Coordinates coordinates);
 		const Stop* GetStop(const std::string_view stop_name) const;
@@ -42,7 +43,7 @@ namespace transport {
 
 		void SetLengthBetweenStops(const std::unordered_map<std::string, std::unordered_map<std::string, size_t>>& length_from_to);
 
-
+		const std::deque<Stop>& GetStops() const;
 	private:
 		std::deque<Bus> buses_storage_;
 		std::deque<Stop> stops_storage_;

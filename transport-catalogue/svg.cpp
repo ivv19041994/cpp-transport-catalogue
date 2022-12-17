@@ -3,13 +3,18 @@
 
 
 #include <cmath>
+#include <iomanip>
 
 namespace svg {
 
 using namespace std::literals;
     
 std::ostream& operator<<(std::ostream& os, const Point& point) {
-    return os << point.x << ","sv << point.y;
+    auto save = os.precision();
+    
+    return os 
+        << std::setprecision(6 + 1 + (int)log10(point.x)) << point.x << ","sv 
+        << std::setprecision(6 + 1 + (int)log10(point.y)) << point.y << std::setprecision(save);
 }
 std::ostream& operator<<(std::ostream& os, StrokeLineCap stroke_line_cap) {
     switch(stroke_line_cap) {

@@ -1,6 +1,7 @@
 #include "json_reader.h"
 
 #include "request_handler.h"
+#include "map_renderer.h"
 
 namespace transport {
 namespace json {
@@ -16,8 +17,14 @@ void InputStatReader(std::istream& is, std::ostream& os, transport::TransportCat
     //throw std::runtime_error(Print(root));
 
 	InputReader(root.AsMap().at("base_requests"), transport_catalogue);
-	StatReader(root.AsMap().at("stat_requests"), transport_catalogue).Print(os);
-    
+	if (root.AsMap().count("stat_requests")) {
+		//StatReader(root.AsMap().at("stat_requests"), transport_catalogue).Print(os);
+	}
+
+	if (root.AsMap().count("render_settings")) {
+		RenderReader(os, root.AsMap().at("render_settings"), transport_catalogue);
+	}
+
 }
 
 std::istream& InputReader(std::istream& is, transport::TransportCatalogue& transport_catalogue) {
@@ -166,6 +173,68 @@ void StatReader(std::istream& is, std::ostream& os, const TransportCatalogue& tr
 		result.push_back(StatRequest(request.AsMap(), transport_catalogue));
 	}
 	return ::json::Node{ move(result) };
+}
+
+renderer::Color ParsingColor(const ::json::Node& color_node) {
+	if (color_node.IsString()) {
+		return renderer::Color{ color_node.AsString() };
+	}
+	if (color_node.IsArray()) {
+		auto& arr = color_node.AsArray();
+		if (arr.size() == 3) {
+			return renderer::Rgb{
+				static_cast<unsigned char>(arr.at(0).AsInt()), 
+				static_cast<unsigned char>(arr.at(1).AsInt()),
+				static_cast<unsigned char>(arr.at(2).AsInt())
+			};
+		}
+
+		if (arr.size() == 4) {
+			return renderer::Rgba{
+				static_cast<unsigned char>(arr.at(0).AsInt()),
+				static_cast<unsigned char>(arr.at(1).AsInt()),
+				static_cast<unsigned char>(arr.at(2).AsInt()), 
+				arr.at(3).AsDouble()
+			};
+		}
+	}
+
+	throw std::runtime_error("JSON color node invalid format: "s + color_node.Print());
+}
+
+std::ostream& RenderReader(std::ostream& os, const ::json::Node& render_node, const TransportCatalogue& transport_catalogue) {
+	const Dict& render_dict = render_node.AsMap();
+	renderer::RenderSettings render_settings;
+	render_settings.width = render_dict.at("width").AsDouble();
+	render_settings.height = render_dict.at("height").AsDouble();
+	render_settings.padding = render_dict.at("padding").AsDouble();
+
+	render_settings.line_width = render_dict.at("line_width").AsDouble();
+	render_settings.stop_radius = render_dict.at("stop_radius").AsDouble();
+
+	render_settings.bus_label_font_size = render_dict.at("bus_label_font_size").AsInt();
+	{
+		auto& bus_label_offset = render_dict.at("bus_label_offset").AsArray();
+		render_settings.bus_label_offset = renderer::Point{ bus_label_offset[0].AsDouble(),  bus_label_offset[1].AsDouble() };
+	}
+
+	render_settings.stop_label_font_size = render_dict.at("stop_label_font_size").AsInt();
+	{
+		auto& stop_label_offset = render_dict.at("stop_label_offset").AsArray();
+		render_settings.stop_label_offset = renderer::Point{ stop_label_offset[0].AsDouble(),  stop_label_offset[1].AsDouble() };
+	}
+
+	render_settings.underlayer_color = ParsingColor(render_dict.at("underlayer_color"));
+	render_settings.underlayer_width = render_dict.at("underlayer_width").AsDouble();
+
+	auto& color_palette = render_dict.at("color_palette").AsArray();
+	for (auto& color : color_palette) {
+		render_settings.color_palette.push_back(ParsingColor(color));
+	}
+
+	renderer::MapRenderer map_renderer{ render_settings , transport_catalogue.GetBuses().begin(), transport_catalogue.GetBuses().end() };
+	map_renderer.Render(os);
+	return os;
 }
 
 } //namespace json
