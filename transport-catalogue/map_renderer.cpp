@@ -34,6 +34,12 @@ void MapRenderer::Render(std::ostream& os) {
     document_.Render(os);
 }
 
+std::string MapRenderer::Render() {
+    std::stringstream result;
+    document_.Render(result);
+    return result.str();
+}
+
 bool IsZero(double value) {
     return std::abs(value) < EPSILON;
 }

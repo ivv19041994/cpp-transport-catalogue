@@ -1,19 +1,33 @@
 #pragma once
 
+#include <optional>
+
 #include "json.h"
 #include "transport_catalogue.h"
+#include "map_renderer.h"
+
 
 namespace transport {
 	namespace json {
 
-		void InputStatReader(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue);
+		using ::json::Node;
+		using ::json::Document;
+		using ::json::Array;
+		using ::json::Dict;
 
-		std::istream& InputReader(std::istream& is, transport::TransportCatalogue& transport_catalogue);
-		void InputReader(const ::json::Node& input_node, transport::TransportCatalogue& transport_catalogue);
+		class InputStatReader {
+		public:
+			void operator()(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue);
+		private:
+			std::optional<::transport::renderer::RenderSettings> render_settings_;
 
-		void StatReader(std::istream& is, std::ostream& os, const TransportCatalogue& transport_catalogue);
-		::json::Node StatReader(const ::json::Node& stat_node, const TransportCatalogue& transport_catalogue);
+			void InputReader(const Node& input_node, transport::TransportCatalogue& transport_catalogue);
+			Node StatReader(const Node& stat_node, const TransportCatalogue& transport_catalogue);
 
-		std::ostream& RenderReader(std::ostream& os, const ::json::Node& render_node, const TransportCatalogue& transport_catalogue);
+			Node StatRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
+			Node BusRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
+			Node StopRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
+			Node MapRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
+		};
 	}
 }

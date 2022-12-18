@@ -12,7 +12,7 @@ int main()
 {
 
     TransportCatalogue tc;
-    transport::json::InputStatReader(cin, cout, tc);
+    transport::json::InputStatReader{}(cin, cout, tc);
     //transport::iostream::InputReader(cin, tc);
     //transport::iostream::StatReader(cin, cout, tc);
     //transport::ws::InputReader(web_socket, tc);
