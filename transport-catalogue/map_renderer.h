@@ -126,10 +126,19 @@ namespace renderer {
         double zoom_coeff_ = 0;
     };
 
+    template <typename Nameble>
+    struct NameLess {
+        bool operator()(const Nameble* lhs, const Nameble* rhs) const {
+            return lhs->name_ < rhs->name_;
+        }
+    };
+
     class MapRenderer {
     public:
         template <typename ForvardIt>
         MapRenderer(const RenderSettings& settings, ForvardIt begin_buses, ForvardIt end_buses);
+
+
 
         svg::Color ColorToSvg(const Color& color);
 
@@ -137,59 +146,62 @@ namespace renderer {
 
     private:
         svg::Document document_;
+        std::unique_ptr<SphereProjector> sphere_projector_;
+        std::vector<svg::Color> color_palette_;
+        std::set<const Bus*, NameLess<Bus>> buses_;
+        std::set<const Stop*, NameLess<Stop>> stops_with_buses_;
+        double line_width_;
+        svg::Point bus_label_offset_;
+        size_t bus_label_font_size_;
+        svg::Color underlayer_color_;
+        double underlayer_width_;
+        double stop_radius_;
+        svg::Point stop_label_offset_;
+        size_t stop_label_font_size_;
+
+        void FillColorPalette(const std::vector<Color>& color_palette);
+        void AddLines();
+
+        void SetCommonBusTextSettings(svg::Text& text, const std::string_view bus_name, const svg::Point& position);
+        void AddBusName(const std::string_view name, const Stop* stop, const svg::Color& color);
+        void AddBusNames();
+
+        void AddStopRounds();
+        void SetCommonStopTextSettings(svg::Text& text, const std::string_view stop_name, const svg::Point& position);
+        void AddStopNames();
     };
 
-    struct NameLess {
-        bool operator()(const Bus* lhs, const Bus* rhs) const {
-            return lhs->name_ < rhs->name_;
-        }
-    };
+
 
     template <typename ForvardIt>
-    MapRenderer::MapRenderer(const RenderSettings& settings, ForvardIt begin_buses, ForvardIt end_buses) {
+    MapRenderer::MapRenderer(const RenderSettings& settings, ForvardIt begin_buses, ForvardIt end_buses)
+        : line_width_{settings.line_width}
+        , bus_label_offset_{ settings.bus_label_offset.x,settings.bus_label_offset.y }
+        , bus_label_font_size_{ settings.bus_label_font_size }
+        , underlayer_color_{ ColorToSvg(settings.underlayer_color) }
+        , underlayer_width_{ settings.underlayer_width }
+        , stop_radius_{ settings.stop_radius }
+        , stop_label_offset_{ settings.stop_label_offset.x,settings.stop_label_offset.y }
+        , stop_label_font_size_{ settings.stop_label_font_size } {
         std::list<geo::Coordinates> coordinates;
-        std::set<const Bus*, NameLess> buses;
 
-        
         for (auto it = begin_buses; it != end_buses; ++it) {
-            buses.insert((&(*it)));
+            buses_.insert((&(*it)));
             for (const Stop* stop : it->stops_set_) {
                 coordinates.push_back(stop->coordinates_);
+                stops_with_buses_.insert(stop);
             }
         }
         
-        SphereProjector sphere_projector = SphereProjector(coordinates.begin(), coordinates.end(),
+        sphere_projector_ = std::make_unique<SphereProjector>(coordinates.begin(), coordinates.end(),
             settings.width, settings.height, settings.padding);
         
-        std::vector<svg::Color> color_palette;
-        for (auto& color : settings.color_palette) {
-            color_palette.push_back(ColorToSvg(color));
-        }
-        size_t color_palette_counter = 0;
-        for (const Bus* bus : buses) {
-            if (bus->stops_.size()) {
-                svg::Polyline polyline;
-                for (const Stop* stop : bus->stops_) {
-                    polyline.AddPoint(sphere_projector(stop->coordinates_));
-                }
-                if (!bus->circular_) {
-                    auto it = bus->stops_.crbegin();
-                    for (++it; it != bus->stops_.crend(); ++it) {
-                        polyline.AddPoint(sphere_projector((*it)->coordinates_));
-                    }
-                }
-                polyline.
-                    SetFillColor(svg::NoneColor).
-                    SetStrokeColor(color_palette[color_palette_counter]).
-                    SetStrokeWidth(settings.line_width).
-                    SetStrokeLineCap(svg::StrokeLineCap::ROUND).
-                    SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
+        FillColorPalette(settings.color_palette);
 
-
-                color_palette_counter = (color_palette_counter + 1) % color_palette.size();
-                document_.Add(std::move(polyline));
-            }
-        }
+        AddLines();
+        AddBusNames();
+        AddStopRounds();
+        AddStopNames();
     }
 }//namespace renderer 
 }//namespace transport 
