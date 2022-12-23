@@ -34,49 +34,49 @@ template <typename ReturnClass>
 class DictValueBuilder {
     public:
     
-    DictValueBuilder(std::unique_ptr<BuilderBase> base): builder_{std::move(base)} {
+    DictValueBuilder(std::shared_ptr<BuilderBase> base): builder_{std::move(base)} {
     
     }
     
     ReturnClass Value(Node::Value value) {
         builder_->Value(std::move(value));
-        return ReturnClass{std::move(builder_)};
+        return ReturnClass{builder_};
     }
     DictBuilder<ReturnClass> StartDict() {
         builder_->StartDict();
-        return DictBuilder<ReturnClass>{std::move(builder_)};
+        return DictBuilder<ReturnClass>{builder_};
     }
     ArrayBuilder<ReturnClass> StartArray() {
         builder_->StartArray();
-        return ArrayBuilder<ReturnClass>{std::move(builder_)};
+        return ArrayBuilder<ReturnClass>{builder_};
     }
     
     private:
-    std::unique_ptr<BuilderBase> builder_;
+    std::shared_ptr<BuilderBase> builder_;
 };
     
 template <typename EndReturnClass>
 class DictBuilder {
     public:
-    DictBuilder(std::unique_ptr<BuilderBase> base): builder_{std::move(base)} {
+    DictBuilder(std::shared_ptr<BuilderBase> base): builder_{std::move(base)} {
     
     }
     DictValueBuilder<DictBuilder<EndReturnClass>> Key(std::string key) {
         builder_->Key(std::move(key));
-        return DictValueBuilder<DictBuilder<EndReturnClass>>{std::move(builder_)};
+        return DictValueBuilder<DictBuilder<EndReturnClass>>{builder_};
     }
     EndReturnClass EndDict() {
         builder_->EndDict();
-        return EndReturnClass{std::move(builder_)};
+        return EndReturnClass{builder_};
     }
     private:
-    std::unique_ptr<BuilderBase> builder_;
+    std::shared_ptr<BuilderBase> builder_;
 };
 
 template <typename EndReturnClass>
 class ArrayBuilder {
 public:
-    ArrayBuilder(std::unique_ptr<BuilderBase> base): builder_{std::move(base)} {
+    ArrayBuilder(std::shared_ptr<BuilderBase> base): builder_{std::move(base)} {
     
     }
     ArrayBuilder<EndReturnClass>& Value(Node::Value value) {
@@ -85,26 +85,26 @@ public:
     }
     DictBuilder<ArrayBuilder<EndReturnClass>> StartDict() {
         builder_->StartDict();
-        return DictBuilder<ArrayBuilder<EndReturnClass>>{std::move(builder_)};
+        return DictBuilder<ArrayBuilder<EndReturnClass>>{builder_};
     }
     ArrayBuilder<ArrayBuilder<EndReturnClass>> StartArray() {
         builder_->StartArray();
-        return ArrayBuilder<ArrayBuilder<EndReturnClass>>{std::move(builder_)};
+        return ArrayBuilder<ArrayBuilder<EndReturnClass>>{builder_};
     }
     EndReturnClass EndArray() {
         builder_->EndArray();
-        return EndReturnClass{std::move(builder_)};
+        return EndReturnClass{builder_};
     }
     private:
-    std::unique_ptr<BuilderBase> builder_;
+    std::shared_ptr<BuilderBase> builder_;
 };
 
 class BuilderComplite {
     public:
-    BuilderComplite(std::unique_ptr<BuilderBase> base);
+    BuilderComplite(std::shared_ptr<BuilderBase> base);
     Node Build();
     private:
-    std::unique_ptr<BuilderBase> builder_;
+    std::shared_ptr<BuilderBase> builder_;
 };
 
 class Builder {
@@ -114,7 +114,7 @@ class Builder {
     DictBuilder<BuilderComplite> StartDict();
     ArrayBuilder<BuilderComplite> StartArray();
     private:
-    std::unique_ptr<BuilderBase> builder_;
+    std::shared_ptr<BuilderBase> builder_;
 };
     
     

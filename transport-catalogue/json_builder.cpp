@@ -88,26 +88,26 @@ namespace json {
         return std::move(root_);
     }
     
-    BuilderComplite::BuilderComplite(std::unique_ptr<BuilderBase> base): builder_{std::move(base)} {
+    BuilderComplite::BuilderComplite(std::shared_ptr<BuilderBase> base): builder_{std::move(base)} {
     
     }
     Node BuilderComplite::Build() {
         return builder_->Build();
     }
     
-    Builder::Builder(): builder_{std::make_unique<BuilderBase>()} {
+    Builder::Builder(): builder_{std::make_shared<BuilderBase>()} {
         
     }
     BuilderComplite Builder::Value(Node::Value value) {
         builder_->Value(std::move(value));
-        return BuilderComplite{std::move(builder_)};
+        return BuilderComplite{builder_};
     }
     DictBuilder<BuilderComplite> Builder::StartDict() {
         builder_->StartDict();
-        return DictBuilder<BuilderComplite>{std::move(builder_)};
+        return DictBuilder<BuilderComplite>{builder_};
     }
     ArrayBuilder<BuilderComplite> Builder::StartArray() {
         builder_->StartArray();
-        return ArrayBuilder<BuilderComplite>{std::move(builder_)};
+        return ArrayBuilder<BuilderComplite>{builder_};
     }
 }//namespace json 
