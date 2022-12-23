@@ -6,7 +6,7 @@ namespace transport {
 namespace renderer {
 
 
-svg::Color MapRenderer::ColorToSvg(const Color& color) {
+svg::Color MapRender::ColorToSvg(const Color& color) {
     using namespace std::string_literals;
 
     if (std::holds_alternative<std::string>(color)) {
@@ -30,11 +30,11 @@ svg::Color MapRenderer::ColorToSvg(const Color& color) {
     return s.str();
 }
 
-void MapRenderer::Render(std::ostream& os) {
+void MapRender::Render(std::ostream& os) {
     document_.Render(os);
 }
 
-std::string MapRenderer::Render() {
+std::string MapRender::Render() {
     std::stringstream result;
     document_.Render(result);
     return result.str();
@@ -51,7 +51,7 @@ svg::Point SphereProjector::operator()(geo::Coordinates coords) const {
     };
 }
 
-void MapRenderer::AddLines() {
+void MapRender::AddLines() {
     size_t color_palette_counter = 0;
     for (const Bus* bus : buses_) {
         if (bus->stops_.size()) {
@@ -79,13 +79,13 @@ void MapRenderer::AddLines() {
     }
 }
 
-void MapRenderer::FillColorPalette(const std::vector<Color>& color_palette) {
+void MapRender::FillColorPalette(const std::vector<Color>& color_palette) {
     for (auto& color : color_palette) {
         color_palette_.push_back(ColorToSvg(color));
     }
 }
 
-void MapRenderer::SetCommonBusTextSettings(svg::Text& text, const std::string_view bus_name, const svg::Point& position) {
+void MapRender::SetCommonBusTextSettings(svg::Text& text, const std::string_view bus_name, const svg::Point& position) {
     text.SetPosition(position)
         .SetOffset(bus_label_offset_)
         .SetFontSize(bus_label_font_size_)
@@ -94,7 +94,7 @@ void MapRenderer::SetCommonBusTextSettings(svg::Text& text, const std::string_vi
         .SetData(std::string(bus_name));
 }
 
-void MapRenderer::AddBusName(const std::string_view name, const Stop* stop, const svg::Color& color) {
+void MapRender::AddBusName(const std::string_view name, const Stop* stop, const svg::Color& color) {
     svg::Text substrate;
     svg::Text text;
 
@@ -113,7 +113,7 @@ void MapRenderer::AddBusName(const std::string_view name, const Stop* stop, cons
     document_.Add(std::move(text));
 }
 
-void MapRenderer::AddBusNames() {
+void MapRender::AddBusNames() {
     size_t color_palette_counter = 0;
     for (const Bus* bus : buses_) {
         if (bus->stops_.size()) {
@@ -128,7 +128,7 @@ void MapRenderer::AddBusNames() {
     }
 }
 
-void MapRenderer::AddStopRounds() {
+void MapRender::AddStopRounds() {
     for (const Stop* stop : stops_with_buses_) {
 
         svg::Circle circle;
@@ -142,7 +142,7 @@ void MapRenderer::AddStopRounds() {
     
 }
 
-void MapRenderer::SetCommonStopTextSettings(svg::Text& text, const std::string_view stop_name, const svg::Point& position) {
+void MapRender::SetCommonStopTextSettings(svg::Text& text, const std::string_view stop_name, const svg::Point& position) {
     text.SetPosition(position)
         .SetOffset(stop_label_offset_)
         .SetFontSize(stop_label_font_size_)
@@ -150,7 +150,7 @@ void MapRenderer::SetCommonStopTextSettings(svg::Text& text, const std::string_v
         .SetData(std::string(stop_name));
 }
 
-void MapRenderer::AddStopNames() {
+void MapRender::AddStopNames() {
     for (const Stop* stop : stops_with_buses_) {
         svg::Text substrate;
         svg::Text text;

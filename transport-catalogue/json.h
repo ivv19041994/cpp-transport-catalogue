@@ -32,7 +32,7 @@ using json_variant = std::variant<
     Dict
 >;
 
-class Node: json_variant {
+class Node: private json_variant {
 public:
     using Array = std::vector<Node>;
     using Dict = std::map<std::string, Node>; 
@@ -70,8 +70,6 @@ public:
     std::string Print() const;
 
     Node(Value value);
-
-private:
 };
 
 class Document {

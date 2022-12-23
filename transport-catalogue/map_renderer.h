@@ -133,10 +133,10 @@ namespace renderer {
         }
     };
 
-    class MapRenderer {
+    class MapRender {
     public:
         template <typename ForvardIt>
-        MapRenderer(const RenderSettings& settings, ForvardIt begin_buses, ForvardIt end_buses);
+        MapRender(const RenderSettings& settings, ForvardIt begin_buses, ForvardIt end_buses);
 
 
 
@@ -175,7 +175,7 @@ namespace renderer {
 
 
     template <typename ForvardIt>
-    MapRenderer::MapRenderer(const RenderSettings& settings, ForvardIt begin_buses, ForvardIt end_buses)
+    MapRender::MapRender(const RenderSettings& settings, ForvardIt begin_buses, ForvardIt end_buses)
         : line_width_{settings.line_width}
         , bus_label_offset_{ settings.bus_label_offset.x,settings.bus_label_offset.y }
         , bus_label_font_size_{ settings.bus_label_font_size }

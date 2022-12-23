@@ -10,7 +10,7 @@ namespace json {
 	using ::json::Load;
 	using ::json::Builder;
 
-	renderer::Color ParsingColor(const ::json::Node& color_node) {
+	renderer::Color ParseColor(const ::json::Node& color_node) {
 		if (color_node.IsString()) {
 			return renderer::Color{ color_node.AsString() };
 		}
@@ -59,12 +59,12 @@ namespace json {
 			render_settings.stop_label_offset = renderer::Point{ stop_label_offset[0].AsDouble(),  stop_label_offset[1].AsDouble() };
 		}
 
-		render_settings.underlayer_color = ParsingColor(render_dict.at("underlayer_color"));
+		render_settings.underlayer_color = ParseColor(render_dict.at("underlayer_color"));
 		render_settings.underlayer_width = render_dict.at("underlayer_width").AsDouble();
 
 		auto& color_palette = render_dict.at("color_palette").AsArray();
 		for (auto& color : color_palette) {
-			render_settings.color_palette.push_back(ParsingColor(color));
+			render_settings.color_palette.push_back(ParseColor(color));
 		}
 		return render_settings;
 	}
@@ -221,7 +221,7 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 	if (!render_settings_) {
 		throw std::runtime_error("Map request without render_settings");
 	}
-	renderer::MapRenderer map_renderer{ *render_settings_ , transport_catalogue.GetBuses().begin(), transport_catalogue.GetBuses().end() };
+	renderer::MapRender map_renderer{ *render_settings_ , transport_catalogue.GetBuses().begin(), transport_catalogue.GetBuses().end() };
 
 	//Dict result;
 	//result["request_id"] = request.at("id");

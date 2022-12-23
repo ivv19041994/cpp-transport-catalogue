@@ -2,7 +2,7 @@
 
 namespace transport {
 
-RequestHandler::RequestHandler(const TransportCatalogue& db/*, const renderer::MapRenderer& renderer*/) : db_{ db } {
+RequestHandler::RequestHandler(const TransportCatalogue& db/*, const renderer::MapRender& renderer*/) : db_{ db } {
 }
 
 // Возвращает информацию о маршруте (запрос Bus)

@@ -29,8 +29,8 @@ namespace transport {
 
     class RequestHandler {
     public:
-        // MapRenderer понадобится в следующей части итогового проекта
-        RequestHandler(const TransportCatalogue& db/*, const renderer::MapRenderer& renderer*/);
+        // MapRender понадобится в следующей части итогового проекта
+        RequestHandler(const TransportCatalogue& db/*, const renderer::MapRender& renderer*/);
 
         // Возвращает информацию о маршруте (запрос Bus)
         std::optional<BusStat> GetBusStat(const std::string_view& bus_name) const;
@@ -45,6 +45,6 @@ namespace transport {
     private:
         // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
         const TransportCatalogue& db_;
-        //const renderer::MapRenderer& renderer_;
+        //const renderer::MapRender& renderer_;
     };
 }//namespace transport
