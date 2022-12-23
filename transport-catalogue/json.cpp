@@ -4,6 +4,8 @@ using namespace std;
 
 namespace json {
     
+    Node::Node(Value value) : variant(std::move(value)) {}
+
     bool Node::IsInt() const {
         return holds_alternative<int>(*this);
     }
@@ -26,7 +28,7 @@ namespace json {
     bool Node::IsArray() const {
         return holds_alternative<Array>(*this);
     }
-    bool Node::IsMap() const {
+    bool Node::IsDict() const {
         return holds_alternative<Dict>(*this);
     }
     
@@ -63,8 +65,8 @@ namespace json {
         }
         throw std::logic_error("Node is not Array");
     }
-    const Dict& Node::AsMap() const {
-        if(IsMap()) {
+    const Dict& Node::AsDict() const {
+        if(IsDict()) {
             return std::get<Dict>(*this);
         }
         throw std::logic_error("Node is not map");
@@ -86,6 +88,24 @@ namespace json {
     }
     Node::Node(size_t size): Node(static_cast<int>(size)) {
 
+    }
+
+    Dict& Node::AsDict() {
+        using namespace std::literals;
+        if (!IsDict()) {
+            throw std::logic_error("Not a dict"s);
+        }
+
+        return std::get<Dict>(*this);
+    }
+
+    Array& Node::AsArray() {
+        using namespace std::literals;
+        if (!IsArray()) {
+            throw std::logic_error("Not an array"s);
+        }
+
+        return std::get<Array>(*this);
     }
 
 namespace {
@@ -442,7 +462,7 @@ namespace autotest {
         assert(!null_node.IsPureDouble());
         assert(!null_node.IsString());
         assert(!null_node.IsArray());
-        assert(!null_node.IsMap());
+        assert(!null_node.IsDict());
 
         Node null_node1{ nullptr };
         assert(null_node1.IsNull());
@@ -554,8 +574,8 @@ namespace autotest {
     [[maybe_unused]] void TestMap() {
         using namespace std::literals;
         Node dict_node{ Dict{{"key1"s, "value1"s}, {"key2"s, 42}} };
-        assert(dict_node.IsMap());
-        const Dict& dict = dict_node.AsMap();
+        assert(dict_node.IsDict());
+        const Dict& dict = dict_node.AsDict();
         assert(dict.size() == 2);
         assert(dict.at("key1"s).AsString() == "value1"s);
         assert(dict.at("key2"s).AsInt() == 42);
@@ -597,7 +617,7 @@ namespace autotest {
 
         Node array_node{ Array{} };
         MustThrowLogicError([&array_node] {
-            array_node.AsMap();
+            array_node.AsDict();
             });
         MustThrowLogicError([&array_node] {
             array_node.AsDouble();

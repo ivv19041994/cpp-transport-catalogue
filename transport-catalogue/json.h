@@ -23,13 +23,13 @@ public:
 };
 
 using json_variant = std::variant<
+    std::nullptr_t,
     int,
     double,
     std::string,
     bool,
     Array,
-    Dict,
-    std::nullptr_t
+    Dict
 >;
 
 class Node: json_variant {
@@ -38,6 +38,7 @@ public:
     using Dict = std::map<std::string, Node>; 
 
     using json_variant::variant;
+    using Value = variant;
     Node();
     Node(size_t size);
     
@@ -48,14 +49,16 @@ public:
     bool IsString() const;
     bool IsNull() const;
     bool IsArray() const;
-    bool IsMap() const;
+    bool IsDict() const;
     
     int AsInt() const;
     bool AsBool() const;
     double AsDouble() const;//Возвращает значение типа double, если внутри хранится double либо int. В последнем случае возвращается приведённое в double значение.
     const std::string& AsString() const;
     const Array& AsArray() const;
-    const Dict& AsMap() const;
+    Array& AsArray();
+    const Dict& AsDict() const;
+    Dict& AsDict();
     
     bool operator==(const Node& other) const;
     bool operator!=(const Node& other) const;
@@ -65,6 +68,8 @@ public:
     
     std::ostream& Print(std::ostream& os) const;
     std::string Print() const;
+
+    Node(Value value);
 
 private:
 };

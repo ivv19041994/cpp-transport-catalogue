@@ -12,9 +12,10 @@ using namespace std::literals;
 std::ostream& operator<<(std::ostream& os, const Point& point) {
     auto save = os.precision();
     
+    //только 6 цфр, а не 6 после запятой, злой тренажер ругается за такую точность
     return os 
-        << std::setprecision(6 + 1 + (int)log10(point.x)) << point.x << ","sv 
-        << std::setprecision(6 + 1 + (int)log10(point.y)) << point.y << std::setprecision(save);
+        << std::setprecision(6 /* + 1 + (int)log10(point.x)*/) << point.x << ","sv
+        << std::setprecision(6 /* + 1 + (int)log10(point.y)*/) << point.y << std::setprecision(save);
 }
 std::ostream& operator<<(std::ostream& os, StrokeLineCap stroke_line_cap) {
     switch(stroke_line_cap) {
