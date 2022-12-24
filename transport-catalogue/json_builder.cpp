@@ -3,34 +3,34 @@
 #include <iostream>
 
 namespace json {
-    BuilderBase::BuilderBase() {
-        
+    Builder::Builder() {
+
     }
-    
-    void BuilderBase::ThrowIfReady() {
-        if(context_stack_.size() == 0) {
+
+    void Builder::ThrowIfReady() {
+        if (context_stack_.size() == 0) {
             throw std::logic_error("Object already ready");
         }
     }
-    
-    BuilderBase& BuilderBase::Key(std::string key) {
+
+    KeyBuilder Builder::Key(std::string key) {
         ThrowIfReady();
-        
-        if(context_stack_.back()->IsDict() == false) {
+
+        if (context_stack_.back()->IsDict() == false) {
             throw std::logic_error("Call Key for not Dict");
         }
         context_stack_.push_back(&context_stack_.back()->AsDict()[key]);
-        return *this;
+        return KeyBuilder(std::move(*this));
     }
-    BuilderBase& BuilderBase::Value(Node::Value value) {
+    Builder& Builder::Value(Node::Value value) {
         ThrowIfReady();
-        
-        if(context_stack_.back()->IsNull()) {
+
+        if (context_stack_.back()->IsNull()) {
             *context_stack_.back() = std::move(value);
             context_stack_.pop_back();
             return *this;
         }
-        if(context_stack_.back()->IsArray()) {
+        if (context_stack_.back()->IsArray()) {
             //Node node;
             //node.SetValue(std::move(value));
             Array& arr = context_stack_.back()->AsArray();
@@ -39,75 +39,82 @@ namespace json {
         }
         throw std::logic_error("Set value for invalid Node");
     }
-    BuilderBase& BuilderBase::StartDict() {
-        ThrowIfReady();
-        if(context_stack_.back()->IsNull()) {
-            *context_stack_.back() = Dict{};
-            return *this;
-        }
-        if(context_stack_.back()->IsArray()) {
-            context_stack_.back()->AsArray().push_back(Dict{});
-            context_stack_.push_back(&(context_stack_.back()->AsArray().back()));
-            return *this;
-        }
-        throw std::logic_error("Start dict for invalid Node");
+    DictBuilder Builder::StartDict() {
+
+        StartXxxxx<Dict>();
+        return DictBuilder{ std::move(*this) };
+
+        //ThrowIfReady();
+        //if (context_stack_.back()->IsNull()) {
+        //    *context_stack_.back() = Dict{};
+        //    return DictBuilder{ std::move(*this) };
+        //}
+        //if (context_stack_.back()->IsArray()) {
+        //    context_stack_.back()->AsArray().push_back(Dict{});
+        //    context_stack_.push_back(&(context_stack_.back()->AsArray().back()));
+        //    return DictBuilder{ std::move(*this) };
+        //}
+        //throw std::logic_error("Start dict for invalid Node");
     }
-    BuilderBase& BuilderBase::StartArray() {
-        ThrowIfReady();
-        if(context_stack_.back()->IsNull()) {
-            *context_stack_.back() = Array{};
-            return *this;
-        }
-        if(context_stack_.back()->IsArray()) {
-            context_stack_.back()->AsArray().push_back(Array{});
-            context_stack_.push_back(&(context_stack_.back()->AsArray().back()));
-            return *this;
-        }
-        throw std::logic_error("Start array for invalid Node");
+    ArrayBuilder Builder::StartArray() {
+        StartXxxxx<Array>();
+        return ArrayBuilder{ std::move(*this) };
+
+        //ThrowIfReady();
+        //if (context_stack_.back()->IsNull()) {
+        //    *context_stack_.back() = Array{};
+        //    return ArrayBuilder{ std::move(*this) };
+        //}
+        //if (context_stack_.back()->IsArray()) {
+        //    context_stack_.back()->AsArray().push_back(Array{});
+        //    context_stack_.push_back(&(context_stack_.back()->AsArray().back()));
+        //    return ArrayBuilder{ std::move(*this) };
+        //}
+        //throw std::logic_error("Start array for invalid Node");
     }
-    BuilderBase& BuilderBase::EndDict() {
+    Builder& Builder::EndDict() {
         ThrowIfReady();
-        if(context_stack_.back()->IsDict()) {
+        if (context_stack_.back()->IsDict()) {
             context_stack_.pop_back();
             return *this;
         }
         throw std::logic_error("End dict for invalid Node");
     }
-    BuilderBase& BuilderBase::EndArray() {
+    Builder& Builder::EndArray() {
         ThrowIfReady();
-        if(context_stack_.back()->IsArray()) {
+        if (context_stack_.back()->IsArray()) {
             context_stack_.pop_back();
             return *this;
         }
         throw std::logic_error("End array for invalid Node");
     }
-    Node BuilderBase::Build() {
-        if(context_stack_.size() != 0) {
+    Node Builder::Build() {
+        if (context_stack_.size() != 0) {
             throw std::logic_error("Build for not ready builder");
         }
-        return std::move(root_);
+        return std::move(*root_);
     }
-    
-    BuilderComplite::BuilderComplite(std::shared_ptr<BuilderBase> base): builder_{std::move(base)} {
-    
+
+    DictBuilder KeyBuilder::Value(Node::Value value) {
+        Builder::Value(std::move(value));
+        return DictBuilder(std::move(*this));
     }
-    Node BuilderComplite::Build() {
-        return builder_->Build();
+
+    ArrayBuilder& ArrayBuilder::Value(Node::Value value) {
+        Builder::Value(std::move(value));
+        return *this;
     }
-    
-    Builder::Builder(): builder_{std::make_shared<BuilderBase>()} {
-        
+
+    KeyBuilder::KeyBuilder(Builder&& builder) : Builder{ std::move(builder) } {
+
     }
-    BuilderComplite Builder::Value(Node::Value value) {
-        builder_->Value(std::move(value));
-        return BuilderComplite{builder_};
+
+    DictBuilder::DictBuilder(Builder&& builder) : Builder{ std::move(builder) } {
+
     }
-    DictBuilder<BuilderComplite> Builder::StartDict() {
-        builder_->StartDict();
-        return DictBuilder<BuilderComplite>{builder_};
+
+    ArrayBuilder::ArrayBuilder(Builder&& builder) : Builder{ std::move(builder) } {
+
     }
-    ArrayBuilder<BuilderComplite> Builder::StartArray() {
-        builder_->StartArray();
-        return ArrayBuilder<BuilderComplite>{builder_};
-    }
+
 }//namespace json 
