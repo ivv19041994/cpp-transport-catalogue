@@ -13,9 +13,14 @@
 #include <iostream>
 
 
+
 #include "domain.h"
 
+
 namespace transport {
+
+	
+
 	template <typename Pointer>
 	struct PairPointerHasher {
 		size_t operator() (const std::pair<Pointer, Pointer>& f) const {

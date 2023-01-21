@@ -69,18 +69,36 @@ namespace json {
 		return render_settings;
 	}
 
+	transport::router::RouterSettings ParseRouterSettings(const ::json::Node& settings_node) {
+		const Dict& settings_dict = settings_node.AsDict();
+		router::RouterSettings router_settings;
+
+		router_settings.bus_velocity = settings_dict.at("bus_velocity").AsDouble();
+		router_settings.bus_wait_time = settings_dict.at("bus_wait_time").AsDouble();
+
+		return router_settings;
+	}
+
 	void InputStatReader::operator()(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue) {
 	
 	Document document = Load(is);
 	const Node& root = document.GetRoot();
+	const Dict& dict = root.AsDict();
 
-	if (root.AsDict().count("render_settings")) {
-		render_settings_ = ParseRenderSettings(root.AsDict().at("render_settings"));
+	if (dict.count("render_settings")) {
+		render_settings_ = ParseRenderSettings(dict.at("render_settings"));
 	}
 
-	InputReader(root.AsDict().at("base_requests"), transport_catalogue);
-	if (root.AsDict().count("stat_requests")) {
-		StatReader(root.AsDict().at("stat_requests"), transport_catalogue).Print(os);
+	if (dict.count("routing_settings")) {
+		router_settings_ = ParseRouterSettings(dict.at("routing_settings"));
+	}
+
+	InputReader(dict.at("base_requests"), transport_catalogue);
+	if (dict.count("stat_requests")) {
+
+		router_.emplace( transport_catalogue , router_settings_ );
+
+		StatReader(dict.at("stat_requests"), transport_catalogue).Print(os);
 	}
 }
 
@@ -235,6 +253,79 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 			.Build();
 }
 
+::json::Node InputStatReader::RouteRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
+
+	const Stop* from = transport_catalogue.GetStop(request.at("from").AsString());
+	const Stop* to = transport_catalogue.GetStop(request.at("to").AsString());
+
+	auto builder = Builder{}
+		.StartDict()
+		.Key("request_id").Value(request.at("id").AsInt());
+
+	if (from == nullptr || to == nullptr) {
+		return builder
+			.Key("error_message")
+			.Value("not found")
+			.EndDict()
+			.Build();
+	}
+
+	auto route = router_.value().BuildRoute(from, to);
+
+	if (!route) {
+		return builder
+			.Key("error_message")
+			.Value("not found")
+			.EndDict()
+			.Build();
+	}
+
+
+	const Router::RouteInfo& route_val = route.value();
+	auto items = builder
+		.Key("total_time")
+		.Value(route_val.total_time)
+		.Key("items")
+		.StartArray();
+	for (auto& item : route_val.edges) {
+		if (const Router::Span* pval = std::get_if<Router::Span>(&item)) {
+
+			auto node = Builder{}
+				.StartDict()
+				.Key("bus").Value(pval->bus->name_)
+				.Key("span_count").Value(static_cast<int>(pval->count))
+				.Key("time").Value(pval->time)
+				.Key("type").Value("Bus")
+				.EndDict()
+				.Build();
+
+			items.Value(node
+				.AsDict());
+		} else if (const Router::Wait* pval = std::get_if<Router::Wait>(&item)) {
+			auto node = Builder{}
+				.StartDict()
+				.Key("stop_name").Value(pval->stop->name_)
+				.Key("time").Value(pval->time)
+				.Key("type").Value("Wait")
+				.EndDict()
+				.Build();
+
+			items.Value(node
+				.AsDict());
+		}
+	}
+
+	//Dict result;
+	//result["request_id"] = request.at("id");
+	//result["map"] = map_renderer.Render();
+	//return Node(move(result));
+	return items
+		.EndArray()
+		.EndDict()
+		.Build();
+}
+
+
 ::json::Node InputStatReader::StatRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
 	auto& type = request.at("type");
 	if (type == "Bus"s) {
@@ -247,6 +338,10 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 
 	if (type == "Map"s) {
 		return MapRequest(request, transport_catalogue);
+	}
+
+	if (type == "Route"s) {
+		return RouteRequest(request, transport_catalogue);
 	}
 	return ::json::Node{ Dict {} };
 }

@@ -5,6 +5,7 @@
 #include "json.h"
 #include "transport_catalogue.h"
 #include "map_renderer.h"
+#include "transport_router.h"
 
 
 namespace transport {
@@ -14,12 +15,19 @@ namespace transport {
 		using ::json::Document;
 		using ::json::Array;
 		using ::json::Dict;
+		using ::transport::router::Router;
+		using ::transport::router::RouterSettings;
+		using ::transport::renderer::RenderSettings;
+
+		
 
 		class InputStatReader {
 		public:
 			void operator()(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue);
 		private:
-			std::optional<::transport::renderer::RenderSettings> render_settings_;
+			std::optional<RenderSettings> render_settings_;
+			RouterSettings router_settings_;
+			std::optional<Router> router_;
 
 			void InputReader(const Node& input_node, transport::TransportCatalogue& transport_catalogue);
 			Node StatReader(const Node& stat_node, const TransportCatalogue& transport_catalogue);
@@ -28,6 +36,7 @@ namespace transport {
 			Node BusRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
 			Node StopRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
 			Node MapRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
+			Node RouteRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
 		};
 	}
 }
