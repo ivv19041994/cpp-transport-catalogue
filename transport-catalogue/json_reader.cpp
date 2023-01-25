@@ -287,7 +287,7 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 		.Value(route_val.total_time)
 		.Key("items")
 		.StartArray();
-	for (auto& item : route_val.edges) {
+	for (auto& item : route_val.events) {
 		if (const Router::Span* pval = std::get_if<Router::Span>(&item)) {
 
 			auto node = Builder{}
