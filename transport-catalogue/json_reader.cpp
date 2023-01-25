@@ -4,6 +4,8 @@
 #include "map_renderer.h"
 #include "json_builder.h"
 
+#include "log_duration.h"
+
 namespace transport {
 namespace json {
 	using namespace std;
@@ -86,17 +88,23 @@ namespace json {
 	const Dict& dict = root.AsDict();
 
 	if (dict.count("render_settings")) {
+		//LOG_LIFE_TIME_DURATION("render_settings");
 		render_settings_ = ParseRenderSettings(dict.at("render_settings"));
 	}
 
 	if (dict.count("routing_settings")) {
+		//LOG_LIFE_TIME_DURATION("routing_settings");
 		router_settings_ = ParseRouterSettings(dict.at("routing_settings"));
 	}
 
-	InputReader(dict.at("base_requests"), transport_catalogue);
+	{
+		//LOG_LIFE_TIME_DURATION("base_requests");
+		InputReader(dict.at("base_requests"), transport_catalogue);
+	}
 	if (dict.count("stat_requests")) {
 
-		router_.emplace( transport_catalogue , router_settings_ );
+		//LOG_LIFE_TIME_DURATION("stat_requests");
+
 
 		StatReader(dict.at("stat_requests"), transport_catalogue).Print(os);
 	}
@@ -147,9 +155,9 @@ void InputStatReader::InputReader(const Node& input_node, transport::TransportCa
 	transport_catalogue.SetLengthBetweenStops(length_from_to);
 }
 
-Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
+Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& request_handler) {
 
-	RequestHandler request_handler{ transport_catalogue };
+	//RequestHandler request_handler{ transport_catalogue };
 	//{
 	//	"id": 12345678,
 	//		"type" : "Bus",
@@ -192,8 +200,8 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 		.EndDict().Build();//Node(move(result));
 }
 
-::json::Node InputStatReader::StopRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
-	RequestHandler request_handler{ transport_catalogue };
+::json::Node InputStatReader::StopRequest(const Dict& request, const RequestHandler& request_handler) {
+	//RequestHandler request_handler{ transport_catalogue };
 	//{
 	//	"id": 12345,
 	//		"type" : "Stop",
@@ -234,12 +242,12 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 	return array_builder.EndArray().EndDict().Build();//Node(move(result));
 }
 
-::json::Node InputStatReader::MapRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
+::json::Node InputStatReader::MapRequest(const Dict& request, const RequestHandler& request_handler) {
 
 	if (!render_settings_) {
 		throw std::runtime_error("Map request without render_settings");
 	}
-	renderer::MapRender map_renderer{ *render_settings_ , transport_catalogue.GetBuses().begin(), transport_catalogue.GetBuses().end() };
+	//renderer::MapRender map_renderer{ *render_settings_ , transport_catalogue.GetBuses().begin(), transport_catalogue.GetBuses().end() };
 
 	//Dict result;
 	//result["request_id"] = request.at("id");
@@ -248,29 +256,17 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 	return Builder{}
 			.StartDict()
 				.Key("request_id").Value(request.at("id").AsInt())
-				.Key("map").Value(map_renderer.Render())
+				.Key("map").Value(request_handler.RenderMap())
 			.EndDict()
 			.Build();
 }
 
-::json::Node InputStatReader::RouteRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
-
-	const Stop* from = transport_catalogue.GetStop(request.at("from").AsString());
-	const Stop* to = transport_catalogue.GetStop(request.at("to").AsString());
-
+::json::Node InputStatReader::RouteRequest(const Dict& request, const RequestHandler& request_handler) {
 	auto builder = Builder{}
 		.StartDict()
 		.Key("request_id").Value(request.at("id").AsInt());
 
-	if (from == nullptr || to == nullptr) {
-		return builder
-			.Key("error_message")
-			.Value("not found")
-			.EndDict()
-			.Build();
-	}
-
-	auto route = router_.value().BuildRoute(from, to);
+	auto route = request_handler.BuildRoute(request.at("from").AsString(), request.at("to").AsString());
 
 	if (!route) {
 		return builder
@@ -314,11 +310,6 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 				.AsDict());
 		}
 	}
-
-	//Dict result;
-	//result["request_id"] = request.at("id");
-	//result["map"] = map_renderer.Render();
-	//return Node(move(result));
 	return items
 		.EndArray()
 		.EndDict()
@@ -326,33 +317,54 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 }
 
 
-::json::Node InputStatReader::StatRequest(const Dict& request, const TransportCatalogue& transport_catalogue) {
+::json::Node InputStatReader::StatRequest(const Dict& request, const RequestHandler& request_handler) {
 	auto& type = request.at("type");
 	if (type == "Bus"s) {
-		return BusRequest(request, transport_catalogue);
+		//LOG_LIFE_TIME_DURATION("Bus");
+		return BusRequest(request, request_handler);
 	}
 
 	if (type == "Stop"s) {
-		return StopRequest(request, transport_catalogue);
+		//LOG_LIFE_TIME_DURATION("Stop");
+		return StopRequest(request, request_handler);
 	}
 
 	if (type == "Map"s) {
-		return MapRequest(request, transport_catalogue);
+		//LOG_LIFE_TIME_DURATION("Map");
+		return MapRequest(request, request_handler);
 	}
 
 	if (type == "Route"s) {
-		return RouteRequest(request, transport_catalogue);
+		//LOG_LIFE_TIME_DURATION("Route");
+		return RouteRequest(request, request_handler);
 	}
 	return ::json::Node{ Dict {} };
 }
 
 ::json::Node InputStatReader::StatReader(const ::json::Node& stat_node, const TransportCatalogue& transport_catalogue) {
 	Array result{};
+
+	renderer::MapRender map_renderer{ *render_settings_ , transport_catalogue.GetBuses().begin(), transport_catalogue.GetBuses().end() };
+	Router router{ transport_catalogue, router_settings_ };
+
+	RequestHandler request_handler(transport_catalogue, map_renderer, router);
+
 	for (auto& request : stat_node.AsArray()) {
-		result.push_back(StatRequest(request.AsDict(), transport_catalogue));
+		result.push_back(StatRequest(request.AsDict(), request_handler));
 	}
 	return ::json::Node{ move(result) };
 }
+/*
+::json::Node InputStatReader::StatReader(const ::json::Node& stat_node, const TransportCatalogue& transport_catalogue) {
+
+	auto& arr = stat_node.AsArray();
+	Array result{ arr.size() };
+
+	std::transform(std::execution::par, arr.begin(), arr.end(), result.begin(), [this, &transport_catalogue](auto& request) {
+		return this->StatRequest(request.AsDict(), transport_catalogue);
+		});
+	return ::json::Node{ move(result) };
+}*/
 
 
 

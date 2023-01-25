@@ -1,8 +1,12 @@
 #pragma once
 
 #include <optional>
+#include <unordered_map>
 
 #include "transport_catalogue.h"
+#include "map_renderer.h"
+#include "transport_router.h"
+
 /*
  * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
  * хотелось бы помещать ни в transport_catalogue, ни в json reader.
@@ -27,24 +31,33 @@ namespace transport {
         size_t unique_stop_count;
     };
 
+    using router::Router;
+
     class RequestHandler {
     public:
         // MapRender понадобится в следующей части итогового проекта
-        RequestHandler(const TransportCatalogue& db/*, const renderer::MapRender& renderer*/);
+        RequestHandler(const TransportCatalogue& db, const renderer::MapRender& renderer, const router::Router& router);
 
         // Возвращает информацию о маршруте (запрос Bus)
-        std::optional<BusStat> GetBusStat(const std::string_view& bus_name) const;
+        std::optional<BusStat>& GetBusStat(const std::string_view bus_name) const;
 
         // Возвращает маршруты, проходящие через
-        const std::unordered_set<BusPtr>* GetBusesByStop(const std::string_view& stop_name) const;
-        const std::optional <std::set<std::string_view>> GetSortedBusesByStop(const std::string_view& stop_name) const;
+        const std::optional <std::set<std::string_view>>& GetSortedBusesByStop(const std::string_view stop_name) const;
+
+        std::optional<Router::RouteInfo> BuildRoute(const std::string_view from, const std::string_view to) const;
 
         // Этот метод будет нужен в следующей части итогового проекта
-        //svg::Document RenderMap() const;
+        std::string RenderMap() const;
 
     private:
         // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
         const TransportCatalogue& db_;
-        //const renderer::MapRender& renderer_;
+        const renderer::MapRender& renderer_;
+        const router::Router& router_;
+
+        mutable std::unordered_map<std::string_view, std::optional<BusStat>> bus_stat_cash_;
+        mutable std::unordered_map<std::string_view, std::optional <std::set<std::string_view>>> stop_stat_cash_;
+
+        const std::unordered_set<BusPtr>* GetBusesByStop(const std::string_view& stop_name) const;
     };
 }//namespace transport

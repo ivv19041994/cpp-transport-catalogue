@@ -1,3 +1,5 @@
+#pragma once
+
 #include "transport_catalogue.h"
 
 #include <variant>

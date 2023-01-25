@@ -142,8 +142,8 @@ namespace renderer {
 
         svg::Color ColorToSvg(const Color& color);
 
-        void Render(std::ostream& os);
-        std::string Render();
+        void Render(std::ostream& os) const;
+        std::string Render() const;
 
     private:
         svg::Document document_;

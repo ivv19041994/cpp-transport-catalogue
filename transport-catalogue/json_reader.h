@@ -6,6 +6,7 @@
 #include "transport_catalogue.h"
 #include "map_renderer.h"
 #include "transport_router.h"
+#include "request_handler.h"
 
 
 namespace transport {
@@ -27,16 +28,16 @@ namespace transport {
 		private:
 			std::optional<RenderSettings> render_settings_;
 			RouterSettings router_settings_;
-			std::optional<Router> router_;
+			//std::optional<Router> router_;
 
 			void InputReader(const Node& input_node, transport::TransportCatalogue& transport_catalogue);
 			Node StatReader(const Node& stat_node, const TransportCatalogue& transport_catalogue);
 
-			Node StatRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
-			Node BusRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
-			Node StopRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
-			Node MapRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
-			Node RouteRequest(const Dict& request, const TransportCatalogue& transport_catalogue);
+			Node StatRequest(const Dict& request, const RequestHandler& request_handler);
+			Node BusRequest(const Dict& request, const RequestHandler& request_handler);
+			Node StopRequest(const Dict& request, const RequestHandler& request_handler);
+			Node MapRequest(const Dict& request, const RequestHandler& request_handler);
+			Node RouteRequest(const Dict& request, const RequestHandler& request_handler);
 		};
 	}
 }

@@ -30,11 +30,11 @@ svg::Color MapRender::ColorToSvg(const Color& color) {
     return s.str();
 }
 
-void MapRender::Render(std::ostream& os) {
+void MapRender::Render(std::ostream& os) const {
     document_.Render(os);
 }
 
-std::string MapRender::Render() {
+std::string MapRender::Render() const {
     std::stringstream result;
     document_.Render(result);
     return result.str();
