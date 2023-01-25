@@ -39,14 +39,13 @@ namespace transport {
         RequestHandler(const TransportCatalogue& db, const renderer::MapRender& renderer, const router::Router& router);
 
         // Возвращает информацию о маршруте (запрос Bus)
-        std::optional<BusStat>& GetBusStat(const std::string_view bus_name) const;
+        std::optional<BusStat> GetBusStat(const std::string_view bus_name) const;
 
         // Возвращает маршруты, проходящие через
-        const std::optional <std::set<std::string_view>>& GetSortedBusesByStop(const std::string_view stop_name) const;
+        const std::optional <std::set<std::string_view>> GetSortedBusesByStop(const std::string_view stop_name) const;
 
         std::optional<Router::RouteInfo> BuildRoute(const std::string_view from, const std::string_view to) const;
 
-        // Этот метод будет нужен в следующей части итогового проекта
         std::string RenderMap() const;
 
     private:
@@ -55,8 +54,8 @@ namespace transport {
         const renderer::MapRender& renderer_;
         const router::Router& router_;
 
-        mutable std::unordered_map<std::string_view, std::optional<BusStat>> bus_stat_cash_;
-        mutable std::unordered_map<std::string_view, std::optional <std::set<std::string_view>>> stop_stat_cash_;
+        //mutable std::unordered_map<std::string_view, std::optional<BusStat>> bus_stat_cash_;
+        //mutable std::unordered_map<std::string_view, std::optional <std::set<std::string_view>>> stop_stat_cash_;
 
         const std::unordered_set<BusPtr>* GetBusesByStop(const std::string_view& stop_name) const;
     };

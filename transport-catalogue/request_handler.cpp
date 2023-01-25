@@ -14,17 +14,12 @@ RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::Map
 
 
 // Возвращает информацию о маршруте (запрос Bus)
-std::optional<BusStat>& RequestHandler::GetBusStat(const std::string_view bus_name) const {
-	
+std::optional<BusStat> RequestHandler::GetBusStat(const std::string_view bus_name) const {
 
-	auto it = bus_stat_cash_.find(bus_name);
-	if (it != bus_stat_cash_.end()) {
-		return it->second;
-	}
 
 	const Bus* bus = db_.GetBus(bus_name);
 	if (!bus) {
-		return bus_stat_cash_[bus_name] = std::optional<BusStat>{};
+		return std::optional<BusStat>{};
 	}
 
 	BusStat ret;
@@ -33,7 +28,7 @@ std::optional<BusStat>& RequestHandler::GetBusStat(const std::string_view bus_na
 	ret.stop_count = db_.GetStopsCount(bus);
 	ret.unique_stop_count = db_.GetUniqueStopsCount(bus);
 
-	return bus_stat_cash_[bus_name] = std::move(ret);
+	return ret;
 }
 
 // Возвращает маршруты, проходящие через
@@ -48,25 +43,21 @@ const std::unordered_set<BusPtr>* RequestHandler::GetBusesByStop(const std::stri
 	return db_.GetBusesByStop(pstop);
 }
 
-const std::optional <std::set<std::string_view>>& RequestHandler::GetSortedBusesByStop(const std::string_view stop_name) const {
+const std::optional <std::set<std::string_view>> RequestHandler::GetSortedBusesByStop(const std::string_view stop_name) const {
 	
-	auto it = stop_stat_cash_.find(stop_name);
-	if (it != stop_stat_cash_.end()) {
-		return it->second;
-	}
 	
 	auto buses = GetBusesByStop(stop_name);
 	
 
 	if (!buses) {
-		return stop_stat_cash_[stop_name];
+		return std::optional <std::set<std::string_view>>{};
 	}
 
 	std::set<std::string_view> ret_set;
 	for (auto pbus : *buses) {
 		ret_set.insert(pbus->name_);
 	}
-	return stop_stat_cash_[stop_name] = std::move(ret_set);
+	return ret_set;
 }
 
 std::optional<Router::RouteInfo> RequestHandler::BuildRoute(const std::string_view from, const std::string_view to) const {
