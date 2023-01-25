@@ -20,11 +20,11 @@ namespace transport {
 		size_t Router::GetVertexCount() const {
 			size_t ret = transport_catalogue_.GetStops().size();
 
-			auto& buses = transport_catalogue_.GetBuses();
+			/*auto& buses = transport_catalogue_.GetBuses();
 
 			for (auto& bus : buses) {
 				ret += bus.stops_.size() + (bus.circular_ ? -1 : 0);
-			}
+			}*/
 
 			return ret;
 		}
