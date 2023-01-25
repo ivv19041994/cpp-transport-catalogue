@@ -1,6 +1,6 @@
 #include "transport_router.h"
 
-#include <ranges>
+#include <numeric>
 
 #include <iostream>
 
@@ -131,10 +131,13 @@ namespace transport {
 
 
 		void Router::AddSpanForwardEdges(const Bus& bus, Graph& graph, graph::VertexId start_vertex_id) const {
-			auto r = std::ranges::views::iota(start_vertex_id, start_vertex_id + bus.stops_.size());
-			AddSpanEdges(bus, graph, bus.stops_.begin(), bus.stops_.end(), r.begin());
 
-			
+			//auto r = std::views::iota(start_vertex_id, start_vertex_id + bus.stops_.size()); не работает в Яндекс
+			std::vector<graph::VertexId> ids(bus.stops_.size());
+			iota(ids.begin(), ids.end(), start_vertex_id);
+			AddSpanEdges(bus, graph, bus.stops_.begin(), bus.stops_.end(), ids.begin());
+
+
 			//auto end = bus.stops_.end();
 			//--end;//все кроме конечной, на ней надо принудительно выйти
 			//auto next_stop_it = bus.stops_.begin();
@@ -171,8 +174,13 @@ namespace transport {
 		void Router::AddSpanBackwardEdges(const Bus& bus, Graph& graph, graph::VertexId end_vertex_id) const {
 
 			//std::cout << "--------" << std::endl;
-			auto r = std::views::iota(end_vertex_id - bus.stops_.size(), end_vertex_id) | std::views::reverse;
-			AddSpanEdges(bus, graph, bus.stops_.rbegin(), bus.stops_.rend(), r.begin());
+			//auto r = std::views::iota(end_vertex_id - bus.stops_.size(), end_vertex_id) | std::views::reverse; не работает в яндекс
+			//AddSpanEdges(bus, graph, bus.stops_.rbegin(), bus.stops_.rend(), r.begin());
+
+			std::vector<graph::VertexId> ids(bus.stops_.size());
+			iota(ids.begin(), ids.end(), end_vertex_id - bus.stops_.size());
+
+			AddSpanEdges(bus, graph, bus.stops_.rbegin(), bus.stops_.rend(), ids.rbegin());
 			//std::cout << "--------" << std::endl;
 
 
