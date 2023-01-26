@@ -65,7 +65,7 @@ namespace transport {
 		}
 
 		template<typename StopForwardIt>
-		void Router::AddSpanEdges(const Bus& bus, Graph& graph, StopForwardIt stop_begin, StopForwardIt stop_end) const {
+		void Router::AddBusTrips(const Bus& bus, Graph& graph, StopForwardIt stop_begin, StopForwardIt stop_end) const {
 
 			std::vector<std::tuple<graph::VertexId, Time, size_t>> to_time_spans;
 
@@ -91,16 +91,16 @@ namespace transport {
 		}
 
 
-		void Router::AddSpanForwardEdges(const Bus& bus, Graph& graph) const {
+		void Router::AddForwardBusTrips(const Bus& bus, Graph& graph) const {
 
 			auto& stops = bus.stops_;
-			AddSpanEdges(bus, graph, stops.rbegin(), stops.rend());
+			AddBusTrips(bus, graph, stops.rbegin(), stops.rend());
 		}
 
-		void Router::AddSpanBackwardEdges(const Bus& bus, Graph& graph) const {
+		void Router::AddBackwardBusTrips(const Bus& bus, Graph& graph) const {
 
 			auto& stops = bus.stops_;
-			AddSpanEdges(bus, graph, stops.begin(), stops.end());
+			AddBusTrips(bus, graph, stops.begin(), stops.end());
 		}
 
 
@@ -114,10 +114,10 @@ namespace transport {
 
 			auto& buses = transport_catalogue_.GetBuses();
 
-			for (auto& bus : buses) {
-				AddSpanForwardEdges(bus, graph);
+			for (const auto& bus : buses) {
+				AddForwardBusTrips(bus, graph);
 				if (!bus.circular_)
-					AddSpanBackwardEdges(bus, graph);
+					AddBackwardBusTrips(bus, graph);
 			}
 
 			return graph;
