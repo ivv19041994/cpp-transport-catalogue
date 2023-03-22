@@ -123,11 +123,13 @@ public:
         using namespace std::chrono;
         using namespace std::literals;
 
-        dst_stream_ << id_ << ": "sv << duration_cast<microseconds>(duration_).count() << " mk"sv << std::endl;
+        auto mk = duration_cast<microseconds>(duration_).count();
+        dst_stream_ << id_ << ": "sv << mk << " mk "sv << counter_  << " times "sv << (mk / counter_) << " mk per call"sv << std::endl;
     }
 
     void lock() {
         start_time_ = Clock::now();
+        ++counter_;
     }
 
     void unlock() {
@@ -141,4 +143,5 @@ private:
     Clock::time_point start_time_;
     Clock::duration duration_{};
     std::ostream& dst_stream_;
+    size_t counter_{};
 };
