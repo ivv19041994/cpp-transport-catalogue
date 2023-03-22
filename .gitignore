@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+transport-catalogue/debug
+transport-catalogue/debug/*
