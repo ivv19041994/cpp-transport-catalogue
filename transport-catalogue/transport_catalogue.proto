@@ -1,0 +1,26 @@
+syntax = "proto3"; 
+
+package transport.serialize;
+
+message Stop {
+	double latitude = 1;
+	double longitude = 2;
+	string name = 3;
+	repeated fixed32 road_distance = 4;
+}
+
+message Bus {
+	bool is_roundtrip = 1;
+	string name = 2;
+	repeated uint32 stop_id = 3;
+}
+
+
+message Base {
+	repeated Stop stop = 1;
+	repeated Bus bus = 2;
+}
+
+message TransportCatalogue {
+	Base base = 1;
+}

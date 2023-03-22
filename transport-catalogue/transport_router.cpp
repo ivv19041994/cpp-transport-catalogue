@@ -82,7 +82,7 @@ namespace transport {
 		void Router::AddExitEdges(const Bus& bus, Graph& graph, graph::VertexId start_vertex_id) const {
 			auto end = bus.stops_.end();
 			auto begin = bus.stops_.begin();
-			++start_vertex_id;//первую остановку и для кольца и для прямого маршрута пропускаем
+			++start_vertex_id;//РїРµСЂРІСѓСЋ РѕСЃС‚Р°РЅРѕРІРєСѓ Рё РґР»СЏ РєРѕР»СЊС†Р° Рё РґР»СЏ РїСЂСЏРјРѕРіРѕ РјР°СЂС€СЂСѓС‚Р° РїСЂРѕРїСѓСЃРєР°РµРј
 			++begin;
 			--end;
 			for (; begin != end; ++begin, ++start_vertex_id) {
@@ -103,7 +103,7 @@ namespace transport {
 		template<typename StopForwardIt, typename VarexIdForwardIt>
 		void Router::AddSpanEdges(const Bus& bus, Graph& graph, StopForwardIt stop_begin, StopForwardIt stop_end, VarexIdForwardIt vartex_it) const {
 
-			--stop_end;//все кроме конечной, на ней надо принудительно выйти
+			--stop_end;//РІСЃРµ РєСЂРѕРјРµ РєРѕРЅРµС‡РЅРѕР№, РЅР° РЅРµР№ РЅР°РґРѕ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РІС‹Р№С‚Рё
 			auto next_stop_it = stop_begin;
 			auto stop_it = next_stop_it++;
 
@@ -118,7 +118,7 @@ namespace transport {
 					Span{ &bus, time });
 			}
 
-			//принудительно выходим на конечной:
+			//РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РІС‹С…РѕРґРёРј РЅР° РєРѕРЅРµС‡РЅРѕР№:
 
 			Time time = GetTime(*stop_it, *next_stop_it);
 			AddEdge(
@@ -132,14 +132,14 @@ namespace transport {
 
 		void Router::AddSpanForwardEdges(const Bus& bus, Graph& graph, graph::VertexId start_vertex_id) const {
 
-			//auto r = std::views::iota(start_vertex_id, start_vertex_id + bus.stops_.size()); не работает в Яндекс
+			//auto r = std::views::iota(start_vertex_id, start_vertex_id + bus.stops_.size()); РЅРµ СЂР°Р±РѕС‚Р°РµС‚ РІ РЇРЅРґРµРєСЃ
 			std::vector<graph::VertexId> ids(bus.stops_.size());
 			iota(ids.begin(), ids.end(), start_vertex_id);
 			AddSpanEdges(bus, graph, bus.stops_.begin(), bus.stops_.end(), ids.begin());
 
 
 			//auto end = bus.stops_.end();
-			//--end;//все кроме конечной, на ней надо принудительно выйти
+			//--end;//РІСЃРµ РєСЂРѕРјРµ РєРѕРЅРµС‡РЅРѕР№, РЅР° РЅРµР№ РЅР°РґРѕ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РІС‹Р№С‚Рё
 			//auto next_stop_it = bus.stops_.begin();
 			//auto stop_it = next_stop_it++;
 
@@ -158,7 +158,7 @@ namespace transport {
 			//		Span{ &bus, time });
 			//}
 
-			////принудительно выходим на конечной:
+			////РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РІС‹С…РѕРґРёРј РЅР° РєРѕРЅРµС‡РЅРѕР№:
 			//auto length_meters = transport_catalogue_.GetLengthFromTo(*stop_it, *next_stop_it);
 			//Time time = static_cast<double>(length_meters) / (settings_.bus_velocity * 1000 / 60);
 			//std::cout << "AddEdgeF " << start_vertex_id << " " << stop_to_vertex_.at(*end) << std::endl;
@@ -174,7 +174,7 @@ namespace transport {
 		void Router::AddSpanBackwardEdges(const Bus& bus, Graph& graph, graph::VertexId end_vertex_id) const {
 
 			//std::cout << "--------" << std::endl;
-			//auto r = std::views::iota(end_vertex_id - bus.stops_.size(), end_vertex_id) | std::views::reverse; не работает в яндекс
+			//auto r = std::views::iota(end_vertex_id - bus.stops_.size(), end_vertex_id) | std::views::reverse; РЅРµ СЂР°Р±РѕС‚Р°РµС‚ РІ СЏРЅРґРµРєСЃ
 			//AddSpanEdges(bus, graph, bus.stops_.rbegin(), bus.stops_.rend(), r.begin());
 
 			std::vector<graph::VertexId> ids(bus.stops_.size());
@@ -185,7 +185,7 @@ namespace transport {
 
 
 			//auto end = bus.stops_.rend();
-			//--end;//все кроме конечной, на ней надо принудительно выйти
+			//--end;//РІСЃРµ РєСЂРѕРјРµ РєРѕРЅРµС‡РЅРѕР№, РЅР° РЅРµР№ РЅР°РґРѕ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РІС‹Р№С‚Рё
 			//--end_vertex_id;
 			//auto next_stop_it = bus.stops_.rbegin();
 			//auto stop_it = next_stop_it++;
@@ -203,7 +203,7 @@ namespace transport {
 			//		Span{ &bus, time });
 			//}
 
-			////принудительно выходим на конечной:
+			////РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РІС‹С…РѕРґРёРј РЅР° РєРѕРЅРµС‡РЅРѕР№:
 			//auto length_meters = transport_catalogue_.GetLengthFromTo(*stop_it, *next_stop_it);
 			//Time time = static_cast<double>(length_meters) / (settings_.bus_velocity * 1000 / 60);
 			//std::cout << "AddEdgeB " << end_vertex_id << " " << stop_to_vertex_.at(*end) << std::endl;

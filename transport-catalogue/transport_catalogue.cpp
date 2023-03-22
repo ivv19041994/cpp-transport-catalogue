@@ -2,6 +2,7 @@
 
 #include <numeric>
 #include <stdexcept>
+#include <cassert>
 using namespace std;
 
 namespace transport {
@@ -48,12 +49,21 @@ namespace transport {
 	}
 
 	size_t TransportCatalogue::GetLengthFromTo(const Stop* from, const Stop* to) const {
-		try {
-			return length_from_to_.at({ from, to });
-		}
-		catch (const out_of_range& e) {
-			return 0;
-		}
+		//try {
+			auto it = length_from_to_.find({ from, to }); 
+			if(it == length_from_to_.end()) {
+				it = length_from_to_.find({ to, from });
+				if(it == length_from_to_.end()) {
+                    return 0;
+                }
+			}
+			return it->second;
+			
+			//return length_from_to_.at({ from, to });
+		//}
+		//catch (const out_of_range& e) {
+		//	return 0;
+		//}
 	}
 
 	size_t TransportCatalogue::GetLength(const Bus* bus) const {
@@ -120,6 +130,10 @@ namespace transport {
 				}
 			}
 		}
+	}
+	
+	const TransportCatalogue::length_map& TransportCatalogue::GetLengthMap() const {
+		return length_from_to_;
 	}
 
 	const std::deque<Stop>& TransportCatalogue::GetStops() const {

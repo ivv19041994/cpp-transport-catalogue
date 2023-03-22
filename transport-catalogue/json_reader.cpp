@@ -78,28 +78,52 @@ namespace json {
 
 		return router_settings;
 	}
+	
+	void InputStatReader::operator()(const Document& document, std::ostream& os, transport::TransportCatalogue& transport_catalogue) {
+		
+		const Node& root = document.GetRoot();
+		const Dict& dict = root.AsDict();
+
+		if (dict.count("render_settings")) {
+			render_settings_ = ParseRenderSettings(dict.at("render_settings"));
+		}
+
+		if (dict.count("routing_settings")) {
+			router_settings_ = ParseRouterSettings(dict.at("routing_settings"));
+		}
+		
+		if (dict.count("base_requests")) {
+			InputReader(dict.at("base_requests"), transport_catalogue);
+		}
+		
+		
+		/*for(const transport::Bus& bus: transport_catalogue.GetBuses()) {
+			std::cout << "InputStatReader buses |" << bus.name_ << "|" <<  std::endl;
+			std::cout << "is_roundtrip = " << bus.circular_ << std::endl;
+			std::cout << "stop_names : " << std::endl;
+			for(auto&n : bus.stops_) {
+				std::cout << n->name_ << std::endl;
+			}
+		}*/
+		
+		//std::cout << "stat_requests begin" << std::endl;
+		if (dict.count("stat_requests")) {
+			
+			//std::cout << "router_.emplace( transport_catalogue , router_settings_ ); begin" << std::endl;
+			if(router_settings_) {
+				router_.emplace( transport_catalogue , *router_settings_ );
+			}
+			//std::cout << "router_.emplace( transport_catalogue , router_settings_ ); end" << std::endl;
+			StatReader(dict.at("stat_requests"), transport_catalogue).Print(os);
+		}
+		
+		//std::cout << "stat_requests end" << std::endl;
+	}
 
 	void InputStatReader::operator()(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue) {
 	
 	Document document = Load(is);
-	const Node& root = document.GetRoot();
-	const Dict& dict = root.AsDict();
-
-	if (dict.count("render_settings")) {
-		render_settings_ = ParseRenderSettings(dict.at("render_settings"));
-	}
-
-	if (dict.count("routing_settings")) {
-		router_settings_ = ParseRouterSettings(dict.at("routing_settings"));
-	}
-
-	InputReader(dict.at("base_requests"), transport_catalogue);
-	if (dict.count("stat_requests")) {
-
-		router_.emplace( transport_catalogue , router_settings_ );
-
-		StatReader(dict.at("stat_requests"), transport_catalogue).Print(os);
-	}
+	this->operator()(document, os, transport_catalogue);
 }
 
 void InputStatReader::InputReader(const Node& input_node, transport::TransportCatalogue& transport_catalogue) {
