@@ -2,7 +2,6 @@
 
 #include <numeric>
 #include <stdexcept>
-#include <cassert>
 using namespace std;
 
 namespace transport {
@@ -131,10 +130,6 @@ namespace transport {
 			}
 		}
 	}
-	
-	const TransportCatalogue::length_map& TransportCatalogue::GetLengthMap() const {
-		return length_from_to_;
-	}
 
 	const std::deque<Stop>& TransportCatalogue::GetStops() const {
 		return stops_storage_;
@@ -142,6 +137,10 @@ namespace transport {
 
 	const std::deque<Bus>& TransportCatalogue::GetBuses() const {
 		return buses_storage_;
+	}
+	
+	const TransportCatalogue::length_map& TransportCatalogue::GetLengthMap() const {
+		return length_from_to_;
 	}
 }
 

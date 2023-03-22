@@ -32,7 +32,7 @@ namespace transport {
 	class TransportCatalogue {
 	public:
 		using length_map = std::unordered_map<std::pair<const Stop*, const Stop*>, size_t, PairPointerHasher<const Stop*>>;
-	
+		
 		template<typename Container>
 		void AddBus(std::string name, bool circular, const Container& stop_names);
 		const Bus* GetBus(const std::string_view bus_name) const;
@@ -53,11 +53,7 @@ namespace transport {
 		const std::deque<Stop>& GetStops() const;
 		
 		const length_map& GetLengthMap() const;
-		
 	private:
-		
-
-		
 		std::deque<Bus> buses_storage_;
 		std::deque<Stop> stops_storage_;
 		std::unordered_map<std::string_view, Stop*> stops_;
