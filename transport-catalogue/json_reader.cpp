@@ -378,6 +378,13 @@ Node InputStatReader::BusRequest(const Dict& request, const TransportCatalogue& 
 	return ::json::Node{ move(result) };
 }
 
+const std::optional<RenderSettings>& InputStatReader::GetRenderSettings() const {
+	return render_settings_;
+}
+
+InputStatReader::InputStatReader(RenderSettings render_settings)
+: render_settings_{std::move(render_settings)} {}
+
 
 
 } //namespace json

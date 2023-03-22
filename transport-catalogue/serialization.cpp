@@ -61,7 +61,15 @@ void DeserializeBase(transport::TransportCatalogue& transport_catalogue, const B
 	}*/
 	
 }
-	
+
+transport::TransportCatalogue DeserializeBase(const Base& input) {
+	transport::TransportCatalogue transport_catalogue;
+	DeserializeBase(transport_catalogue, input);
+	return transport_catalogue;
+}
+
+
+/*
 transport::TransportCatalogue DeserializeTransportCatalogue(std::istream& input) {
 	transport::TransportCatalogue transport_catalogue;
 	transport::serialize::TransportCatalogue load;
@@ -76,7 +84,7 @@ transport::TransportCatalogue DeserializeTransportCatalogue(std::istream& input)
 	
 	DeserializeBase(transport_catalogue, load.base());
 	return transport_catalogue;
-}
+}*/
 
 Stop Create(const transport::Stop stop) {
 	Stop ret;
@@ -171,12 +179,78 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 	return base;
 }
 
-void SaveTransportCatalogueTo(const transport::TransportCatalogue& transport_catalogue, std::ostream& output) {
+void SaveTransportCatalogueTo(
+	const transport::TransportCatalogue& transport_catalogue, 
+	const renderer::RenderSettings& render_settings, 
+	std::ostream& output) {
 	transport::serialize::TransportCatalogue save;
 	
 	*save.mutable_base() = SerializeBase(transport_catalogue);
+	*save.mutable_render_settings() = SerializeRenderSettings(render_settings);
 	
 	save.SerializeToOstream(&output);
+}
+
+renderer::Point DeserializePoint(const Point& input) {
+	return {input.x(), input.y()};
+}
+
+renderer::RenderSettings DeserializeRenderSettings(const RenderSettings& input) {
+	renderer::RenderSettings ret;
+	
+    ret.width = input.width();
+    ret.height = input.height();
+    ret.padding = input.padding();
+
+    ret.line_width = input.line_width();
+    ret.stop_radius = input.stop_radius();
+
+    ret.bus_label_font_size = input.bus_label_font_size();
+    ret.bus_label_offset = DeserializePoint(input.bus_label_offset());
+
+    ret.stop_label_font_size = input.stop_label_font_size();
+    ret.stop_label_offset = DeserializePoint(input.stop_label_offset());
+
+    ret.underlayer_color = input.underlayer_color();
+    ret.underlayer_width = input.underlayer_width();
+	
+	ret.color_palette.reserve(input.color_palette_size());
+	for(int color_index = 0; color_index < input.color_palette_size(); ++color_index) {
+		ret.color_palette.push_back(input.color_palette(color_index));
+	}
+    return ret;
+}
+
+Point SerializePoint(const renderer::Point& input) {
+	Point ret;
+	ret.set_x(input.x);
+	ret.set_y(input.y);
+	return ret;
+}
+
+RenderSettings SerializeRenderSettings(const renderer::RenderSettings& input) {
+	RenderSettings ret;
+	
+    ret.set_width(input.width);
+    ret.set_height(input.height);
+    ret.set_padding(input.padding);
+
+    ret.set_line_width(input.line_width);
+    ret.set_stop_radius(input.stop_radius);
+
+    ret.set_bus_label_font_size(input.bus_label_font_size);
+    *ret.mutable_bus_label_offset() = SerializePoint(input.bus_label_offset);
+
+    ret.set_stop_label_font_size(input.stop_label_font_size);
+    *ret.mutable_stop_label_offset() = SerializePoint(input.stop_label_offset);
+
+    ret.set_underlayer_color(renderer::MapRender::ColorToSvg(input.underlayer_color));
+    ret.set_underlayer_width(input.underlayer_width);
+	
+	for(const renderer::Color& color: input.color_palette) {
+		*ret.add_color_palette() = renderer::MapRender::ColorToSvg(color);
+	}
+    return ret;
 }
 
 }

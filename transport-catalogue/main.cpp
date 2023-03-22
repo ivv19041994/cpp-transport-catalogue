@@ -38,14 +38,23 @@ int main(int argc, char* argv[]) {
     if (mode == "make_base"sv) {
 		TransportCatalogue tc;
 		
-		transport::json::InputStatReader{}(document, cout, tc);
+		transport::json::InputStatReader reader{};
+		reader(document, cout, tc);
 		fstream file(db_path, ios::binary | ios::out);
-        transport::serialize::SaveTransportCatalogueTo(tc, file);
+        transport::serialize::SaveTransportCatalogueTo(tc, *reader.GetRenderSettings(), file);
 		
     } else if (mode == "process_requests"sv) {
 		fstream file(db_path, ios::binary | ios::in);
-		TransportCatalogue tc = transport::serialize::DeserializeTransportCatalogue(file);
-		transport::json::InputStatReader{}(document, cout, tc);
+		transport::serialize::TransportCatalogue load;
+		
+		if (!load.ParseFromIstream(&file)) {
+			throw std::logic_error("Data base is broken");
+		}
+		
+		TransportCatalogue tc = transport::serialize::DeserializeBase(load.base());
+		transport::renderer::RenderSettings render_settings = transport::serialize::DeserializeRenderSettings(load.render_settings());
+		transport::json::InputStatReader reader{render_settings};
+		reader(document, cout, tc);
         // process requests here
 
     } else {

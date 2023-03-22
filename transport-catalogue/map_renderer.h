@@ -140,7 +140,7 @@ namespace renderer {
 
 
 
-        svg::Color ColorToSvg(const Color& color);
+        static svg::Color ColorToSvg(const Color& color);
 
         void Render(std::ostream& os);
         std::string Render();

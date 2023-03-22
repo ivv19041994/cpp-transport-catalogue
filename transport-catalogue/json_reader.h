@@ -23,8 +23,12 @@ namespace transport {
 
 		class InputStatReader {
 		public:
+			InputStatReader() = default;
+			InputStatReader(RenderSettings render_settings);
+			
 			void operator()(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue);
 			void operator()(const Document& document, std::ostream& os, transport::TransportCatalogue& transport_catalogue);
+			const std::optional<RenderSettings>& GetRenderSettings() const;
 		private:
 			std::optional<RenderSettings> render_settings_;
 			std::optional<RouterSettings> router_settings_;
