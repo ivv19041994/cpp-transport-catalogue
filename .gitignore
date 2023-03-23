@@ -33,3 +33,6 @@
 
 transport-catalogue/debug
 transport-catalogue/debug/*
+
+transport-catalogue/debug-vs
+transport-catalogue/debug-vs/*

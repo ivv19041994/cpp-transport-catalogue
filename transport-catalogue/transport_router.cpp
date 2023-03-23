@@ -9,12 +9,31 @@ namespace transport {
 		Router::Router(const TransportCatalogue& transport_catalogue, RouterSettings settings)
 			: transport_catalogue_{ transport_catalogue }
 			, settings_{ settings }
-			, bus_velocity_meters_per_second_{ settings_.bus_velocity * 1000 / 60 }
+			, bus_velocity_meters_per_min_{ settings_.bus_velocity * 1000 / 60 }
 			, stop_to_vertex_{ StopToVertex() }
 			, graph_{ BuildGraph() }
 			, router_{ graph_.directed_weighted_graph } {
+		}
 
+		Router::Router(const TransportCatalogue& transport_catalogue, RouterSettings settings, Graph graph) : transport_catalogue_{ transport_catalogue }
+			, settings_{ settings }
+			, bus_velocity_meters_per_min_{ settings_.bus_velocity * 1000 / 60 }
+			, stop_to_vertex_{ StopToVertex() }
+			, graph_{ std::move(graph)}
+			, router_{ graph_.directed_weighted_graph } {
 
+		}
+
+		const RouterSettings& Router::GetSettings() const {
+			return settings_;
+		}
+
+		const Router::Graph& Router::GetGraph() const {
+			return graph_;
+		}
+
+		const TransportCatalogue& Router::GetTransportCatalogue() const {
+			return transport_catalogue_;
 		}
 
 		size_t Router::GetVertexCount() const {
@@ -61,7 +80,7 @@ namespace transport {
 
 		Time Router::GetTime(const Stop* from, const Stop* to) const {
 			auto length_meters = transport_catalogue_.GetLengthFromTo(from, to);
-			return static_cast<double>(length_meters) / bus_velocity_meters_per_second_;
+			return static_cast<double>(length_meters) / bus_velocity_meters_per_min_;
 		}
 
 		template<typename StopForwardIt>

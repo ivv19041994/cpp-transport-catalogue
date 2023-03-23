@@ -104,6 +104,9 @@ void InputStatReader::operator()(const Document& document, std::ostream& os, tra
 		//LOG_LIFE_TIME_DURATION("base_requests");
 		InputReader(dict.at("base_requests"), transport_catalogue);
 	}
+
+	router_.emplace(std::ref(transport_catalogue), router_settings_);
+
 	if (dict.count("stat_requests")) {
 
 		//LOG_LIFE_TIME_DURATION("stat_requests");
@@ -111,6 +114,10 @@ void InputStatReader::operator()(const Document& document, std::ostream& os, tra
 
 		StatReader(dict.at("stat_requests"), transport_catalogue).Print(os);
 	}
+}
+
+const std::optional<Router>& InputStatReader::GetRouter() const {
+	return router_;
 }
 
 void InputStatReader::InputReader(const Node& input_node, transport::TransportCatalogue& transport_catalogue) {
@@ -265,6 +272,7 @@ Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& requ
 }
 
 ::json::Node InputStatReader::RouteRequest(const Dict& request, const RequestHandler& request_handler) {
+	using namespace std::string_literals;
 	auto builder = Builder{}
 		.StartDict()
 		.Key("request_id").Value(request.at("id").AsInt());
@@ -294,7 +302,7 @@ Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& requ
 				.Key("bus").Value(pval->bus->name_)
 				.Key("span_count").Value(static_cast<int>(pval->count))
 				.Key("time").Value(pval->time)
-				.Key("type").Value("Bus")
+				.Key("type").Value("Bus"s)
 				.EndDict()
 				.Build();
 
@@ -305,7 +313,7 @@ Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& requ
 				.StartDict()
 				.Key("stop_name").Value(pval->stop->name_)
 				.Key("time").Value(pval->time)
-				.Key("type").Value("Wait")
+				.Key("type").Value("Wait"s)
 				.EndDict()
 				.Build();
 
@@ -344,21 +352,34 @@ Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& requ
 	return ::json::Node{ Dict {} };
 }
 
-::json::Node InputStatReader::StatReader(const ::json::Node& stat_node, const TransportCatalogue& transport_catalogue) {
-	Array result{};
-
+::json::Node InputStatReader::StatReader(const Node& stat_node, const TransportCatalogue& transport_catalogue, Router& router) {
 	renderer::MapRender map_renderer{ *render_settings_ , transport_catalogue.GetBuses().begin(), transport_catalogue.GetBuses().end() };
-	Router router{ transport_catalogue, router_settings_ };
 
 	RequestHandler request_handler(transport_catalogue, map_renderer, router);
+	return StatReader(stat_node, request_handler);
+}
 
+::json::Node InputStatReader::StatReader(const ::json::Node& stat_node, const TransportCatalogue& transport_catalogue) {
+
+	return StatReader(stat_node, transport_catalogue, *router_);
+}
+
+const RouterSettings& InputStatReader::GetRouterSettings() const {
+	return router_settings_;
+}
+
+::json::Node InputStatReader::StatReader(const Node& stat_node, const RequestHandler& request_handler) {
+	Array result{};
 	for (auto& request : stat_node.AsArray()) {
 		result.push_back(StatRequest(request.AsDict(), request_handler));
 	}
 	return ::json::Node{ move(result) };
 }
 
-InputStatReader::InputStatReader(RenderSettings render_settings) : render_settings_{render_settings} {}
+InputStatReader::InputStatReader(RenderSettings render_settings, Router router) 
+: render_settings_{render_settings}
+, router_settings_{router.GetSettings()}
+, router_{std::move(router)} {}
 
 const std::optional<RenderSettings>& InputStatReader::GetRenderSettings() const {
 	return render_settings_;

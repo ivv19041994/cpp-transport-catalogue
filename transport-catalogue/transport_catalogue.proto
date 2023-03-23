@@ -1,5 +1,8 @@
 syntax = "proto3"; 
 
+import "map_renderer.proto";
+import "transport_router.proto";
+
 package transport.serialize;
 
 message Stop {
@@ -21,32 +24,8 @@ message Base {
 	repeated Bus bus = 2;
 }
 
-message Point {
-	double x = 1;
-	double y = 2;
-}
-
-message RenderSettings {
-	double width = 1;
-	double height = 2;
-	double padding = 3;
-
-	double line_width = 4;
-	double stop_radius = 5;
-
-	uint32 bus_label_font_size = 6;
-	Point bus_label_offset = 7;
-
-	uint32 stop_label_font_size = 8;
-	Point stop_label_offset = 9;
-
-	string underlayer_color = 10;
-	double underlayer_width = 11;
-
-	repeated string color_palette = 12;
-}
-
 message TransportCatalogue {
 	Base base = 1;
 	RenderSettings render_settings = 2;
+	Router router = 3;
 }

@@ -94,16 +94,25 @@ Stop Create(const transport::Stop stop) {
 	return ret;
 }
 
-size_t GetStopIndex(const std::deque<transport::Stop>& stops, const transport::Stop* stop) {
+template<typename C, typename T>
+size_t GetContainerIndex(const C& container, const T* pointer) {
 	size_t ret = 0;
-	for(const auto& s: stops) {
-		if(&s == stop) {
+	for (const auto& obj : container) {
+		if (&obj == pointer) {
 			return ret;
 		}
 		++ret;
 	}
 	assert(false);
 	return ret;
+}
+
+size_t GetStopIndex(const std::deque<transport::Stop>& stops, const transport::Stop* stop) {
+	return GetContainerIndex(stops, stop);
+}
+
+size_t GetBusIndex(const std::deque<transport::Bus>& buses, const transport::Bus* bus) {
+	return GetContainerIndex(buses, bus);
 }
 
 Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
@@ -182,12 +191,14 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 void SaveTransportCatalogueTo(
 	const transport::TransportCatalogue& transport_catalogue, 
 	const renderer::RenderSettings& render_settings, 
+	const router::Router& router,
 	std::ostream& output) {
 	transport::serialize::TransportCatalogue save;
 	
 	*save.mutable_base() = SerializeBase(transport_catalogue);
 	*save.mutable_render_settings() = SerializeRenderSettings(render_settings);
-	
+	*save.mutable_router() = SerializeRouter(router);
+
 	save.SerializeToOstream(&output);
 }
 
@@ -252,6 +263,136 @@ RenderSettings SerializeRenderSettings(const renderer::RenderSettings& input) {
 	}
     return ret;
 }
+
+Edge SerializeEdge(const graph::Edge<double>& edge) {
+	Edge ret;
+	ret.set_from_vertex(edge.from);
+	ret.set_to_vertex(edge.to);
+	ret.set_weight(edge.weight);
+	return ret;
+}
+
+Graph SerializeGraph(const graph::DirectedWeightedGraph<double>& graph) {
+	Graph ret;
+
+	ret.set_vertex_count(graph.GetVertexCount());
+	for (graph::EdgeId i = 0; i < graph.GetEdgeCount(); ++i) {
+		*ret.add_edge() = SerializeEdge(graph.GetEdge(i));
+	}
+	return ret;
+}
+
+graph::Edge<double> DeserializeEdge(const Edge& edge) {
+	graph::Edge<double> ret;
+	ret.from = edge.from_vertex();
+	ret.to = edge.to_vertex();
+	ret.weight = edge.weight();
+	return ret;
+}
+
+graph::DirectedWeightedGraph<double> DeserializeGraph(const Graph& graph) {
+	graph::DirectedWeightedGraph<double> ret{graph.vertex_count()};
+	for (int i = 0; i < graph.edge_size(); ++i) {
+		ret.AddEdge(DeserializeEdge(graph.edge(i)));
+	}
+	return ret;
+}
+
+RouterSettings SerializeRouterSettings(const router::RouterSettings& router_settings) {
+	RouterSettings ret;
+	ret.set_bus_wait_time_min(router_settings.bus_wait_time);
+	ret.set_bus_velocity_km_per_h(router_settings.bus_velocity);
+	return ret;
+}
+
+WaitInfo SerializeWaitInfo(const router::Router::Wait& wait, const transport::TransportCatalogue& tc) {
+	WaitInfo ret;
+	auto& stops = tc.GetStops();
+	ret.set_stop_id(GetStopIndex(stops, wait.stop));
+	ret.set_time(wait.time);
+	return ret;
+}
+
+SpanInfo SerializeSpanInfo(const router::Router::Span& span, const transport::TransportCatalogue& tc) {
+	SpanInfo ret;
+	auto& buses = tc.GetBuses();
+	ret.set_bus_id(GetBusIndex(buses, span.bus));
+	ret.set_stop_count(span.count);
+	ret.set_time_in_bus(span.time);
+	return ret;
+}
+
+
+EdgeInfo SerializeEdgeInfo(const router::Router::EdgeInfo& info, const transport::TransportCatalogue& tc) {
+	EdgeInfo ret;
+	*ret.mutable_wait_info() = SerializeWaitInfo(info.wait, tc);  //.set_wait_stop_id(GetStopIndex(stops, info.wait.stop));
+	*ret.mutable_span_info() = SerializeSpanInfo(info.span, tc);
+	return ret;
+}
+
+RouterGraph SerializeRouterGraph(const router::Router::Graph& graph, const transport::TransportCatalogue& tc) {
+	RouterGraph ret;
+	*ret.mutable_graph() = SerializeGraph(graph.directed_weighted_graph);
+	for (const auto& edge_info : graph.edges) {
+		*ret.add_edge_info() = SerializeEdgeInfo(edge_info, tc);
+	}
+	return ret;
+}
+
+Router SerializeRouter(const router::Router& router) {
+	Router ret;
+	*ret.mutable_router_settings() = SerializeRouterSettings(router.GetSettings());
+	*ret.mutable_graph() = SerializeRouterGraph(router.GetGraph(), router.GetTransportCatalogue());
+	return ret;
+}
+
+router::RouterSettings DeserializeRouterSettings(const RouterSettings& router_settings) {
+	router::RouterSettings ret;
+	ret.bus_wait_time = router_settings.bus_wait_time_min();
+	ret.bus_velocity = router_settings.bus_velocity_km_per_h();
+	return ret;
+}
+
+router::Router::Wait DeserializeWaitInfo(const WaitInfo& wait, const transport::TransportCatalogue& tc) {
+	router::Router::Wait ret;
+	ret.stop = &tc.GetStops()[wait.stop_id()];
+	ret.time = wait.time();
+	return ret;
+}
+
+router::Router::Span DeserializeSpanInfo(const SpanInfo& span, const transport::TransportCatalogue& tc) {
+	router::Router::Span ret;
+
+	ret.bus = &tc.GetBuses()[span.bus_id()];
+	ret.count = span.stop_count();
+	ret.time = span.time_in_bus();
+	return ret;
+}
+
+router::Router::EdgeInfo DeserializeEdgeInfo(const EdgeInfo& info, const transport::TransportCatalogue& tc) {
+	router::Router::EdgeInfo ret;
+	ret.wait = DeserializeWaitInfo(info.wait_info(), tc);
+	ret.span = DeserializeSpanInfo(info.span_info(), tc);
+	return ret;
+}
+
+router::Router::Graph DeserializeRouterGraph(const RouterGraph& graph, const transport::TransportCatalogue& tc) {
+	router::Router::Graph ret;
+	ret.directed_weighted_graph = DeserializeGraph(graph.graph());
+
+	for (int i = 0; i < graph.edge_info_size(); ++i) {
+		ret.edges.push_back(DeserializeEdgeInfo(graph.edge_info(i), tc));
+	}
+	return ret;
+}
+
+router::Router DeserializeRouter(const Router& router, const transport::TransportCatalogue& tc) {
+	return router::Router(
+		tc, 
+		DeserializeRouterSettings(router.router_settings()), 
+		DeserializeRouterGraph(router.graph(), tc));
+}
+
 
 }
 }

@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 		transport::json::InputStatReader reader{};
 		reader(document, cout, tc);
 		fstream file(db_path, ios::binary | ios::out);
-        transport::serialize::SaveTransportCatalogueTo(tc, *reader.GetRenderSettings(), file);
+        transport::serialize::SaveTransportCatalogueTo(tc, *reader.GetRenderSettings(), *reader.GetRouter(), file);
 		
     } else if (mode == "process_requests"sv) {
 		fstream file(db_path, ios::binary | ios::in);
@@ -53,7 +53,8 @@ int main(int argc, char* argv[]) {
 		
 		TransportCatalogue tc = transport::serialize::DeserializeBase(load.base());
 		transport::renderer::RenderSettings render_settings = transport::serialize::DeserializeRenderSettings(load.render_settings());
-		transport::json::InputStatReader reader{render_settings};
+
+		transport::json::InputStatReader reader{render_settings, transport::serialize::DeserializeRouter(load.router(), tc)};
 		reader(document, cout, tc);
         // process requests here
 

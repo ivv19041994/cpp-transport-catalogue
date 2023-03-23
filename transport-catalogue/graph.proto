@@ -1,0 +1,14 @@
+syntax = "proto3"; 
+
+package transport.serialize;
+
+message Edge {
+	uint32 from_vertex = 1;
+	uint32 to_vertex = 2;
+	double weight = 3;
+}
+
+message Graph {
+	uint32 vertex_count = 1;
+	repeated Edge edge = 2;
+}

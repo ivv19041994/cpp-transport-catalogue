@@ -32,20 +32,6 @@ namespace router {
 			size_t count;
 		};
 
-		using Event = std::variant< Wait, Span>;
-
-
-		Router(const TransportCatalogue& transport_catalogue, RouterSettings settings);
-
-		struct RouteInfo {
-			Time total_time;
-			std::vector<Event> events;
-		};
-
-		std::optional<RouteInfo> BuildRoute(const Stop* from, const Stop* to) const;
-
-	private:
-
 		struct EdgeInfo {
 			Wait wait;
 			Span span;
@@ -56,9 +42,32 @@ namespace router {
 			std::vector<EdgeInfo> edges;
 		};
 
+		using Event = std::variant< Wait, Span>;
+
+
+		Router(const TransportCatalogue& transport_catalogue, RouterSettings settings);
+		Router(const TransportCatalogue& transport_catalogue, RouterSettings settings, Graph graph);
+
+		struct RouteInfo {
+			Time total_time;
+			std::vector<Event> events;
+		};
+
+		std::optional<RouteInfo> BuildRoute(const Stop* from, const Stop* to) const;
+
+		const RouterSettings& GetSettings() const;
+
+		const Graph& GetGraph() const;
+
+		const TransportCatalogue& GetTransportCatalogue() const;
+
+	private:
+
+
+
 		const TransportCatalogue& transport_catalogue_;
 		RouterSettings settings_;
-		Speed bus_velocity_meters_per_second_;
+		Speed bus_velocity_meters_per_min_;
 		std::unordered_map<const Stop*, graph::VertexId> stop_to_vertex_;
 		Graph graph_;
 		graph::Router<Time> router_;

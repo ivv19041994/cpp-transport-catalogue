@@ -25,18 +25,23 @@ namespace transport {
 		class InputStatReader {
 		public:
 			InputStatReader() = default;
-			InputStatReader(RenderSettings render_settings);
+			InputStatReader(RenderSettings render_settings, Router router);
 			
 			void operator()(std::istream& is, std::ostream& os, transport::TransportCatalogue& transport_catalogue);
 			void operator()(const Document& document, std::ostream& os, transport::TransportCatalogue& transport_catalogue);
 			const std::optional<RenderSettings>& GetRenderSettings() const;
+
+			Node StatReader(const Node& stat_node, const TransportCatalogue& transport_catalogue, Router& router);
+			const RouterSettings& GetRouterSettings() const;
+			const std::optional<Router>& GetRouter() const;
 		private:
 			std::optional<RenderSettings> render_settings_;
 			RouterSettings router_settings_;
-			//std::optional<Router> router_;
+			std::optional<Router> router_;
 
 			void InputReader(const Node& input_node, transport::TransportCatalogue& transport_catalogue);
 			Node StatReader(const Node& stat_node, const TransportCatalogue& transport_catalogue);
+			Node StatReader(const Node& stat_node, const RequestHandler& request_handler);
 
 			Node StatRequest(const Dict& request, const RequestHandler& request_handler);
 			Node BusRequest(const Dict& request, const RequestHandler& request_handler);
