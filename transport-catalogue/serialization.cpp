@@ -1,8 +1,6 @@
 #include "serialization.h"
+
 #include <cstdint>
-
-
-
 #include <iostream>
 
 namespace transport {
@@ -42,24 +40,9 @@ void DeserializeBase(transport::TransportCatalogue& transport_catalogue, const B
 			const Stop& stop = base.stop(stop_id);
 			stop_names.push_back(stop.name());
 		}
-		/*std::cout << "AddBus |" << bus.name() << "|" <<  std::endl;
-		std::cout << "is_roundtrip = " << bus.is_roundtrip() << std::endl;
-		std::cout << "stop_names : " << std::endl;
-		for(auto&n : stop_names) {
-			std::cout << n << std::endl;
-		}*/
+
 		transport_catalogue.AddBus(bus.name(), bus.is_roundtrip(), stop_names);
 	}
-	
-	/*for(const transport::Bus& bus: transport_catalogue.GetBuses()) {
-		std::cout << "AddBus |" << bus.name_ << "|" <<  std::endl;
-		std::cout << "is_roundtrip = " << bus.circular_ << std::endl;
-		std::cout << "stop_names : " << std::endl;
-		for(auto&n : bus.stops_) {
-			std::cout << n->name_ << std::endl;
-		}
-	}*/
-	
 }
 
 transport::TransportCatalogue DeserializeBase(const Base& input) {
@@ -67,24 +50,6 @@ transport::TransportCatalogue DeserializeBase(const Base& input) {
 	DeserializeBase(transport_catalogue, input);
 	return transport_catalogue;
 }
-
-
-/*
-transport::TransportCatalogue DeserializeTransportCatalogue(std::istream& input) {
-	transport::TransportCatalogue transport_catalogue;
-	transport::serialize::TransportCatalogue load;
-	
-	if (!load.ParseFromIstream(&input)) {
-        return transport_catalogue;
-    }
-	
-	if(!load.has_base()) {
-		return transport_catalogue;
-	}
-	
-	DeserializeBase(transport_catalogue, load.base());
-	return transport_catalogue;
-}*/
 
 Stop Create(const transport::Stop stop) {
 	Stop ret;
@@ -116,7 +81,6 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 	}
 	const auto& length_map = transport_catalogue.GetLengthMap();
 	
-	//size_t cnt = 0;
 	std::unordered_map<const transport::Stop*, std::unordered_map<const transport::Stop*, size_t>> uniq_len;
 	for(const auto&[from_to, len]: length_map) {
 		const transport::Stop* from = from_to.first;
@@ -131,10 +95,7 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 			}
 		}
 		uniq_len[from][to] = len;
-		//++cnt;
 	}
-	
-	//std::cout << "uniq_len =" << cnt << " length_map = " << length_map.size() << std::endl;;
 	
 	for(const auto&[pfrom, umap]: uniq_len) {
 		size_t from = transport_catalogue.GetStopIndex(pfrom->name_);
@@ -360,7 +321,6 @@ router::Router DeserializeRouter(const Router& router) {
 	return router::Router(
 		DeserializeRouterGraph(router.graph()));
 }
-
 
 }
 }

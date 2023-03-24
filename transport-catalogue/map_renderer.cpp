@@ -174,5 +174,4 @@ void MapRender::AddStopNames() {
 }
 
 }//namespace renderer
-
 }//namespace transport

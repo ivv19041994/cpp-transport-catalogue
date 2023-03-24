@@ -6,17 +6,17 @@
 #include <iomanip>
 
 namespace svg {
-
 using namespace std::literals;
     
 std::ostream& operator<<(std::ostream& os, const Point& point) {
     auto save = os.precision();
-    
+
     //только 6 цфр, а не 6 после запятой, злой тренажер ругается за такую точность
-    return os 
-        << std::setprecision(6 /* + 1 + (int)log10(point.x)*/) << point.x << ","sv
-        << std::setprecision(6 /* + 1 + (int)log10(point.y)*/) << point.y << std::setprecision(save);
+    return os
+        << std::setprecision(6) << point.x << ","sv
+        << std::setprecision(6) << point.y << std::setprecision(save);
 }
+
 std::ostream& operator<<(std::ostream& os, StrokeLineCap stroke_line_cap) {
     switch(stroke_line_cap) {
         case StrokeLineCap::BUTT: return os << "butt"sv;
@@ -25,6 +25,7 @@ std::ostream& operator<<(std::ostream& os, StrokeLineCap stroke_line_cap) {
     }
     return os;
 }
+
 std::ostream& operator<<(std::ostream& os, StrokeLineJoin stroke_line_join) {
     switch(stroke_line_join) {
         case StrokeLineJoin::ARCS: return os << "arcs"sv;
@@ -52,7 +53,6 @@ void Document::Render(std::ostream& out) const {
     out << "</svg>"sv;
 }
 
-
 void Object::Render(const RenderContext& context) const {
     context.RenderIndent();
 
@@ -63,8 +63,6 @@ void Object::Render(const RenderContext& context) const {
 }
 
 // ---------- Circle ------------------
-
-    
 Circle& Circle::SetCenter(Point center)  {
     center_ = center;
     return *this;
@@ -244,4 +242,5 @@ void Snowman::Draw(svg::ObjectContainer& container) const {
     container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y + head_radius_ * 2}).SetRadius(head_radius_ * 1.5).SetFillColor("rgb(240,240,240)").SetStrokeColor("black"));
     container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y}).SetRadius(head_radius_).SetFillColor("rgb(240,240,240)").SetStrokeColor("black"));
 }
+
 }//namespace shapes

@@ -10,13 +10,8 @@ RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::Map
 	, router_{ router } {
 }
 
-
-
-
 // Возвращает информацию о маршруте (запрос Bus)
 std::optional<BusStat> RequestHandler::GetBusStat(const std::string_view bus_name) const {
-
-
 	const Bus* bus = db_.GetBus(bus_name);
 	if (!bus) {
 		return std::optional<BusStat>{};
@@ -33,7 +28,6 @@ std::optional<BusStat> RequestHandler::GetBusStat(const std::string_view bus_nam
 
 // Возвращает маршруты, проходящие через
 const std::unordered_set<BusPtr>* RequestHandler::GetBusesByStop(const std::string_view& stop_name) const {
-
 	const Stop* pstop = db_.GetStop(stop_name);
 
 	if (!pstop) {
@@ -44,11 +38,8 @@ const std::unordered_set<BusPtr>* RequestHandler::GetBusesByStop(const std::stri
 }
 
 const std::optional <std::set<std::string_view>> RequestHandler::GetSortedBusesByStop(const std::string_view stop_name) const {
-	
-	
 	auto buses = GetBusesByStop(stop_name);
 	
-
 	if (!buses) {
 		return std::optional <std::set<std::string_view>>{};
 	}
