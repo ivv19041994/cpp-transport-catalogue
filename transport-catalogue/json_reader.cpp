@@ -104,8 +104,8 @@ void InputStatReader::operator()(const Document& document, std::ostream& os, tra
 		//LOG_LIFE_TIME_DURATION("base_requests");
 		InputReader(dict.at("base_requests"), transport_catalogue);
 	}
-
-	router_.emplace(std::ref(transport_catalogue), router_settings_);
+	if(router_settings_)
+		router_.emplace(std::ref(transport_catalogue), *router_settings_);
 
 	if (dict.count("stat_requests")) {
 
@@ -366,10 +366,6 @@ Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& requ
 	return StatReader(stat_node, transport_catalogue, *router_);
 }
 
-const RouterSettings& InputStatReader::GetRouterSettings() const {
-	return router_settings_;
-}
-
 ::json::Node InputStatReader::StatReader(const Node& stat_node, const RequestHandler& request_handler) {
 	Array result{};
 	for (auto& request : stat_node.AsArray()) {
@@ -380,7 +376,6 @@ const RouterSettings& InputStatReader::GetRouterSettings() const {
 
 InputStatReader::InputStatReader(RenderSettings render_settings, Router router) 
 : render_settings_{render_settings}
-, router_settings_{router.GetSettings()}
 , router_{std::move(router)} {}
 
 const std::optional<RenderSettings>& InputStatReader::GetRenderSettings() const {

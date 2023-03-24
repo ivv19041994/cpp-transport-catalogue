@@ -61,11 +61,14 @@ const std::optional <std::set<std::string_view>> RequestHandler::GetSortedBusesB
 }
 
 std::optional<Router::RouteInfo> RequestHandler::BuildRoute(const std::string_view from, const std::string_view to) const {
-	const Stop* stop_from = db_.GetStop(from);
-	const Stop* stop_to = db_.GetStop(to);
+	size_t stop_from = db_.GetStopIndex(from);
+	size_t stop_to = db_.GetStopIndex(to);
 
-	if (stop_from == nullptr || stop_to == nullptr) {
-		return {};
+	{
+		size_t fail = db_.GetStops().size();
+		if (stop_from == fail || stop_to == fail) {
+			return {};
+		}
 	}
 
 	return router_.BuildRoute(stop_from, stop_to);

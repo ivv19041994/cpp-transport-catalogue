@@ -66,45 +66,19 @@ namespace router {
 
 
 		Router(const TransportCatalogue& transport_catalogue, RouterSettings settings);
-		Router(const TransportCatalogue& transport_catalogue, RouterSettings settings, Graph graph);
+		Router(Graph graph);
 
 		struct RouteInfo {
 			Time total_time;
 			std::vector<Event> events;
 		};
 
-		std::optional<RouteInfo> BuildRoute(const Stop* from, const Stop* to) const;
-
-		const RouterSettings& GetSettings() const;
+		std::optional<RouteInfo> BuildRoute(size_t from_index, size_t to_index) const;
 
 		const Graph& GetGraph() const;
-
-		const TransportCatalogue& GetTransportCatalogue() const;
-
 	private:
-
-
-
-		const TransportCatalogue& transport_catalogue_;
-		RouterSettings settings_;
-		Speed bus_velocity_meters_per_min_;
-		//std::unordered_map<const Stop*, graph::VertexId> stop_to_vertex_;
-		Graph graph_;
+		std::unique_ptr<Graph> graph_;//unique_ptr иначе router_ после перемещения перейдет в невалидное состояние
 		graph::Router<Time> router_;
-
-		Graph BuildGraph() const;
-		size_t GetVertexCount() const;
-
-		Time GetTime(const Stop* from, const Stop* to) const;
-
-		template<typename StopForwardIt>
-		void AddBusTrips(const Bus& bus, Graph& graph, StopForwardIt stop_begin, StopForwardIt stop_end) const;
-		void AddForwardBusTrips(const Bus& bus, Graph& graph) const;
-		void AddBackwardBusTrips(const Bus& bus, Graph& graph) const;
-
-		void AddEdge(Graph& graph, graph::VertexId from, graph::VertexId to, EdgeInfo edge) const;
-
-		std::unordered_map<const Stop*, graph::VertexId> StopToVertex() const;
 	};
 	
 } // namespace router

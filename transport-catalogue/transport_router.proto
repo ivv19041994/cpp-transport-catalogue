@@ -31,6 +31,5 @@ message RouterGraph {
 }
 
 message Router {
-	RouterSettings router_settings = 1;
-	RouterGraph graph = 2;
+	RouterGraph graph = 1;
 }

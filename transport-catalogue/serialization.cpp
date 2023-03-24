@@ -278,14 +278,14 @@ RouterSettings SerializeRouterSettings(const router::RouterSettings& router_sett
 	return ret;
 }
 
-WaitInfo SerializeWaitInfo(const router::Wait& wait, const transport::TransportCatalogue& tc) {
+WaitInfo SerializeWaitInfo(const router::Wait& wait) {
 	WaitInfo ret;
 	ret.set_stop_id(wait.stop);
 	ret.set_time(wait.time);
 	return ret;
 }
 
-SpanInfo SerializeSpanInfo(const router::Span& span, const transport::TransportCatalogue& tc) {
+SpanInfo SerializeSpanInfo(const router::Span& span) {
 	SpanInfo ret;
 	ret.set_bus_id(span.bus);
 	ret.set_stop_count(span.count);
@@ -294,26 +294,25 @@ SpanInfo SerializeSpanInfo(const router::Span& span, const transport::TransportC
 }
 
 
-EdgeInfo SerializeEdgeInfo(const router::EdgeInfo& info, const transport::TransportCatalogue& tc) {
+EdgeInfo SerializeEdgeInfo(const router::EdgeInfo& info) {
 	EdgeInfo ret;
-	*ret.mutable_wait_info() = SerializeWaitInfo(info.wait, tc);  //.set_wait_stop_id(GetStopIndex(stops, info.wait.stop));
-	*ret.mutable_span_info() = SerializeSpanInfo(info.span, tc);
+	*ret.mutable_wait_info() = SerializeWaitInfo(info.wait);  //.set_wait_stop_id(GetStopIndex(stops, info.wait.stop));
+	*ret.mutable_span_info() = SerializeSpanInfo(info.span);
 	return ret;
 }
 
-RouterGraph SerializeRouterGraph(const router::Graph& graph, const transport::TransportCatalogue& tc) {
+RouterGraph SerializeRouterGraph(const router::Graph& graph) {
 	RouterGraph ret;
 	*ret.mutable_graph() = SerializeGraph(graph.directed_weighted_graph);
 	for (const auto& edge_info : graph.edges) {
-		*ret.add_edge_info() = SerializeEdgeInfo(edge_info, tc);
+		*ret.add_edge_info() = SerializeEdgeInfo(edge_info);
 	}
 	return ret;
 }
 
 Router SerializeRouter(const router::Router& router) {
 	Router ret;
-	*ret.mutable_router_settings() = SerializeRouterSettings(router.GetSettings());
-	*ret.mutable_graph() = SerializeRouterGraph(router.GetGraph(), router.GetTransportCatalogue());
+	*ret.mutable_graph() = SerializeRouterGraph(router.GetGraph());
 	return ret;
 }
 
@@ -359,8 +358,6 @@ router::Graph DeserializeRouterGraph(const RouterGraph& graph, const transport::
 
 router::Router DeserializeRouter(const Router& router, const transport::TransportCatalogue& tc) {
 	return router::Router(
-		tc, 
-		DeserializeRouterSettings(router.router_settings()), 
 		DeserializeRouterGraph(router.graph(), tc));
 }
 

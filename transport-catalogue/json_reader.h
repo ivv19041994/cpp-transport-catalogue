@@ -32,11 +32,10 @@ namespace transport {
 			const std::optional<RenderSettings>& GetRenderSettings() const;
 
 			Node StatReader(const Node& stat_node, const TransportCatalogue& transport_catalogue, Router& router);
-			const RouterSettings& GetRouterSettings() const;
 			const std::optional<Router>& GetRouter() const;
 		private:
 			std::optional<RenderSettings> render_settings_;
-			RouterSettings router_settings_;
+			std::optional < RouterSettings> router_settings_;
 			std::optional<Router> router_;
 
 			void InputReader(const Node& input_node, transport::TransportCatalogue& transport_catalogue);
