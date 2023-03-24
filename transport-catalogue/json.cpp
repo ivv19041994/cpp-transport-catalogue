@@ -73,11 +73,11 @@ const Dict& Node::AsDict() const {
 }
     
 bool Node::operator==(const Node& other) const {
-    return *this == other;
+    return static_cast<json_variant> (*this) == static_cast<json_variant> (other);
 }
     
 bool Node::operator!=(const Node& other) const {
-    return *this != other;
+    return static_cast<json_variant> (*this) != static_cast<json_variant> (other);
 }
 
 bool Node::operator==(const std::string& str) const {

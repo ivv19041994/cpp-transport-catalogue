@@ -6,7 +6,7 @@
 namespace transport {
 namespace serialize {
 	
-void DeserializeBase(transport::TransportCatalogue& transport_catalogue, const Base& base) {
+void DeserializeTransportCatalogue(transport::TransportCatalogue& transport_catalogue, const TransportCatalogue& base) {
 	
 	std::unordered_map<std::string, std::unordered_map<std::string, size_t>> length_from_to;
 	for(int i = 0; i < base.stop_size(); ++i) {
@@ -45,9 +45,9 @@ void DeserializeBase(transport::TransportCatalogue& transport_catalogue, const B
 	}
 }
 
-transport::TransportCatalogue DeserializeBase(const Base& input) {
+transport::TransportCatalogue DeserializeTransportCatalogue(const TransportCatalogue& input) {
 	transport::TransportCatalogue transport_catalogue;
-	DeserializeBase(transport_catalogue, input);
+	DeserializeTransportCatalogue(transport_catalogue, input);
 	return transport_catalogue;
 }
 
@@ -72,12 +72,12 @@ size_t GetContainerIndex(const C& container, const T* pointer) {
 	return ret;
 }
 
-Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
-	Base base;
+TransportCatalogue SerializeTransportCatalogue(const transport::TransportCatalogue& transport_catalogue) {
+	TransportCatalogue ret;
 	
 	const std::deque<transport::Stop>& stops = transport_catalogue.GetStops();
 	for(auto& stop: stops) {
-		*base.add_stop() = Create(stop);
+		*ret.add_stop() = Create(stop);
 	}
 	const auto& length_map = transport_catalogue.GetLengthMap();
 	
@@ -102,8 +102,8 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 		
 		for(const auto&[pto, len]: umap) {
 			size_t to = transport_catalogue.GetStopIndex(pto->name_);
-			uint32_t distance = (to & 0x7FF) | (static_cast<uint32_t>(len) << 11);
-			base.mutable_stop(from)->add_road_distance(distance);
+			uint32_t distance = (static_cast<uint32_t>(to) & 0x7FF) | (static_cast<uint32_t>(len) << 11);
+			ret.mutable_stop(static_cast<int>(from))->add_road_distance(distance);
 		}
 	}
 	
@@ -114,12 +114,12 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 	
 		for(const transport::Stop* stop: bus.stops_) {
 			auto stop_id = transport_catalogue.GetStopIndex(stop->name_);
-			b.add_stop_id(stop_id);
+			b.add_stop_id(static_cast<uint32_t>(stop_id));
 		}
-		*base.add_bus() = std::move(b);
+		*ret.add_bus() = std::move(b);
 	}
 	
-	return base;
+	return ret;
 }
 
 void SaveTransportCatalogueTo(
@@ -127,9 +127,9 @@ void SaveTransportCatalogueTo(
 	const renderer::RenderSettings& render_settings, 
 	const router::Router& router,
 	std::ostream& output) {
-	transport::serialize::TransportCatalogue save;
+	transport::serialize::Base save;
 	
-	*save.mutable_base() = SerializeBase(transport_catalogue);
+	*save.mutable_transport_catalogue() = SerializeTransportCatalogue(transport_catalogue);
 	*save.mutable_render_settings() = SerializeRenderSettings(render_settings);
 	*save.mutable_router() = SerializeRouter(router);
 
@@ -183,10 +183,10 @@ RenderSettings SerializeRenderSettings(const renderer::RenderSettings& input) {
     ret.set_line_width(input.line_width);
     ret.set_stop_radius(input.stop_radius);
 
-    ret.set_bus_label_font_size(input.bus_label_font_size);
+    ret.set_bus_label_font_size(static_cast<uint32_t>(input.bus_label_font_size));
     *ret.mutable_bus_label_offset() = SerializePoint(input.bus_label_offset);
 
-    ret.set_stop_label_font_size(input.stop_label_font_size);
+    ret.set_stop_label_font_size(static_cast<uint32_t>(input.stop_label_font_size));
     *ret.mutable_stop_label_offset() = SerializePoint(input.stop_label_offset);
 
     ret.set_underlayer_color(renderer::MapRender::ColorToSvg(input.underlayer_color));
@@ -200,8 +200,8 @@ RenderSettings SerializeRenderSettings(const renderer::RenderSettings& input) {
 
 Edge SerializeEdge(const graph::Edge<double>& edge) {
 	Edge ret;
-	ret.set_from_vertex(edge.from);
-	ret.set_to_vertex(edge.to);
+	ret.set_from_vertex(static_cast<uint32_t>(edge.from));
+	ret.set_to_vertex(static_cast<uint32_t>(edge.to));
 	ret.set_weight(edge.weight);
 	return ret;
 }
@@ -209,7 +209,7 @@ Edge SerializeEdge(const graph::Edge<double>& edge) {
 Graph SerializeGraph(const graph::DirectedWeightedGraph<double>& graph) {
 	Graph ret;
 
-	ret.set_vertex_count(graph.GetVertexCount());
+	ret.set_vertex_count(static_cast<uint32_t>(graph.GetVertexCount()));
 	for (graph::EdgeId i = 0; i < graph.GetEdgeCount(); ++i) {
 		*ret.add_edge() = SerializeEdge(graph.GetEdge(i));
 	}
@@ -241,15 +241,15 @@ RouterSettings SerializeRouterSettings(const router::RouterSettings& router_sett
 
 WaitInfo SerializeWaitInfo(const router::Wait& wait) {
 	WaitInfo ret;
-	ret.set_stop_id(wait.stop);
+	ret.set_stop_id(static_cast<uint32_t>(wait.stop));
 	ret.set_time(wait.time);
 	return ret;
 }
 
 SpanInfo SerializeSpanInfo(const router::Span& span) {
 	SpanInfo ret;
-	ret.set_bus_id(span.bus);
-	ret.set_stop_count(span.count);
+	ret.set_bus_id(static_cast<uint32_t>(span.bus));
+	ret.set_stop_count(static_cast<uint32_t>(span.count));
 	ret.set_time_in_bus(span.time);
 	return ret;
 }

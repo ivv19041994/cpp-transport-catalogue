@@ -88,7 +88,7 @@ void MapRender::FillColorPalette(const std::vector<Color>& color_palette) {
 void MapRender::SetCommonBusTextSettings(svg::Text& text, const std::string_view bus_name, const svg::Point& position) {
     text.SetPosition(position)
         .SetOffset(bus_label_offset_)
-        .SetFontSize(bus_label_font_size_)
+        .SetFontSize(static_cast<uint32_t>(bus_label_font_size_))
         .SetFontFamily("Verdana")
         .SetFontWeight("bold")
         .SetData(std::string(bus_name));
@@ -145,7 +145,7 @@ void MapRender::AddStopRounds() {
 void MapRender::SetCommonStopTextSettings(svg::Text& text, const std::string_view stop_name, const svg::Point& position) {
     text.SetPosition(position)
         .SetOffset(stop_label_offset_)
-        .SetFontSize(stop_label_font_size_)
+        .SetFontSize(static_cast<uint32_t>(stop_label_font_size_))
         .SetFontFamily("Verdana")
         .SetData(std::string(stop_name));
 }

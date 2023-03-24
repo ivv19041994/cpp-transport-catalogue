@@ -31,14 +31,14 @@ int make_base(const ::json::Document& document, const std::filesystem::path& db_
 
 int process_requests(const ::json::Document& document, const std::filesystem::path& db_path) {
 	fstream file(db_path, ios::binary | ios::in);
-	transport::serialize::TransportCatalogue load;
+	transport::serialize::Base load;
 
 	if (!load.ParseFromIstream(&file)) {
 		throw std::logic_error("Data base is broken");
 	}
 
 	transport::json::Base base{
-		transport::serialize::DeserializeBase(load.base()),
+		transport::serialize::DeserializeTransportCatalogue(load.transport_catalogue()),
 		transport::serialize::DeserializeRenderSettings(load.render_settings()),
 		transport::serialize::DeserializeRouter(load.router())
 	};

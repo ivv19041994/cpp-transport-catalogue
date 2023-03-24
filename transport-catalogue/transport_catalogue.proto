@@ -19,13 +19,13 @@ message Bus {
 }
 
 
-message Base {
+message TransportCatalogue  {
 	repeated Stop stop = 1;
 	repeated Bus bus = 2;
 }
 
-message TransportCatalogue {
-	Base base = 1;
+message Base {
+	TransportCatalogue transport_catalogue = 1;
 	RenderSettings render_settings = 2;
 	Router router = 3;
 }

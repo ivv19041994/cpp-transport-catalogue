@@ -11,8 +11,8 @@ namespace serialize {
 	
 	
 	
-transport::TransportCatalogue DeserializeBase(const Base& input);
-Base SerializeBase(const transport::TransportCatalogue& input);
+transport::TransportCatalogue DeserializeTransportCatalogue(const TransportCatalogue& input);
+TransportCatalogue SerializeTransportCatalogue(const transport::TransportCatalogue& input);
 
 void SaveTransportCatalogueTo(
 	const transport::TransportCatalogue& transport_catalogue,
