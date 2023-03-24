@@ -107,14 +107,6 @@ size_t GetContainerIndex(const C& container, const T* pointer) {
 	return ret;
 }
 
-size_t GetStopIndex(const std::deque<transport::Stop>& stops, const transport::Stop* stop) {
-	return GetContainerIndex(stops, stop);
-}
-
-size_t GetBusIndex(const std::deque<transport::Bus>& buses, const transport::Bus* bus) {
-	return GetContainerIndex(buses, bus);
-}
-
 Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 	Base base;
 	
@@ -145,10 +137,10 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 	//std::cout << "uniq_len =" << cnt << " length_map = " << length_map.size() << std::endl;;
 	
 	for(const auto&[pfrom, umap]: uniq_len) {
-		size_t from = GetStopIndex(stops, pfrom);
+		size_t from = transport_catalogue.GetStopIndex(pfrom->name_);
 		
 		for(const auto&[pto, len]: umap) {
-			size_t to = GetStopIndex(stops, pto);
+			size_t to = transport_catalogue.GetStopIndex(pto->name_);
 			uint32_t distance = (to & 0x7FF) | (static_cast<uint32_t>(len) << 11);
 			base.mutable_stop(from)->add_road_distance(distance);
 		}
@@ -158,28 +150,9 @@ Base SerializeBase(const transport::TransportCatalogue& transport_catalogue) {
 		Bus b;
 		b.set_name(bus.name_);
 		b.set_is_roundtrip(bus.circular_);
-		//будем использовать по 11 бит на остановку (2048 различных остановок > 2000 запросов из условия задачи)
-		//0x7FF будем использовать как запрещенный номер
-		/*size_t size_temp = (bus.stops_.size() * 11 + 31) / 32;
-		std::vector<uint32_t> temp(size_temp);
-		size_t offset = 0;
+	
 		for(const transport::Stop* stop: bus.stops_) {
-			auto stop_id = GetStopIndex(stops, stop);
-			assert(stop_id < 0x7FF);
-			size_t index = offset / 32;
-			size_t offset_in_index = offset % 32;
-			temp[index] |= stop_id << offset_in_index;
-			if(offset_in_index > 21) {//был обрезан верх
-				temp[index + 1] |= stop_id >> (32 - offset_in_index);
-			}
-			offset += 11;
-		}
-		
-		//надо заполнить остатки битами
-		temp.back() |= std::numeric_limits<uint32_t>::max() << (offset % 32);*/
-		
-		for(const transport::Stop* stop: bus.stops_) {
-			auto stop_id = GetStopIndex(stops, stop);
+			auto stop_id = transport_catalogue.GetStopIndex(stop->name_);
 			b.add_stop_id(stop_id);
 		}
 		*base.add_bus() = std::move(b);
@@ -307,16 +280,14 @@ RouterSettings SerializeRouterSettings(const router::RouterSettings& router_sett
 
 WaitInfo SerializeWaitInfo(const router::Router::Wait& wait, const transport::TransportCatalogue& tc) {
 	WaitInfo ret;
-	auto& stops = tc.GetStops();
-	ret.set_stop_id(GetStopIndex(stops, wait.stop));
+	ret.set_stop_id(tc.GetStopIndex(wait.stop->name_));
 	ret.set_time(wait.time);
 	return ret;
 }
 
 SpanInfo SerializeSpanInfo(const router::Router::Span& span, const transport::TransportCatalogue& tc) {
 	SpanInfo ret;
-	auto& buses = tc.GetBuses();
-	ret.set_bus_id(GetBusIndex(buses, span.bus));
+	ret.set_bus_id(tc.GetBusIndex(span.bus->name_));
 	ret.set_stop_count(span.count);
 	ret.set_time_in_bus(span.time);
 	return ret;
