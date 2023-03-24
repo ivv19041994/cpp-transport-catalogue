@@ -297,7 +297,7 @@ Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& requ
 	auto& stops = request_handler.GetTransportCatalogue().GetStops();
 	auto& buses = request_handler.GetTransportCatalogue().GetBuses();
 	for (auto& item : route_val.events) {
-		if (const Router::Span* pval = std::get_if<Router::Span>(&item)) {
+		if (const router::Span* pval = std::get_if<router::Span>(&item)) {
 
 			auto node = Builder{}
 				.StartDict()
@@ -310,7 +310,7 @@ Node InputStatReader::BusRequest(const Dict& request, const RequestHandler& requ
 
 			items.Value(node
 				.AsDict());
-		} else if (const Router::Wait* pval = std::get_if<Router::Wait>(&item)) {
+		} else if (const router::Wait* pval = std::get_if<router::Wait>(&item)) {
 			auto node = Builder{}
 				.StartDict()
 				.Key("stop_name").Value(stops[pval->stop].name_)

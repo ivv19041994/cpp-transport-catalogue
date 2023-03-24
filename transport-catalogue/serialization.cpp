@@ -278,14 +278,14 @@ RouterSettings SerializeRouterSettings(const router::RouterSettings& router_sett
 	return ret;
 }
 
-WaitInfo SerializeWaitInfo(const router::Router::Wait& wait, const transport::TransportCatalogue& tc) {
+WaitInfo SerializeWaitInfo(const router::Wait& wait, const transport::TransportCatalogue& tc) {
 	WaitInfo ret;
 	ret.set_stop_id(wait.stop);
 	ret.set_time(wait.time);
 	return ret;
 }
 
-SpanInfo SerializeSpanInfo(const router::Router::Span& span, const transport::TransportCatalogue& tc) {
+SpanInfo SerializeSpanInfo(const router::Span& span, const transport::TransportCatalogue& tc) {
 	SpanInfo ret;
 	ret.set_bus_id(span.bus);
 	ret.set_stop_count(span.count);
@@ -294,14 +294,14 @@ SpanInfo SerializeSpanInfo(const router::Router::Span& span, const transport::Tr
 }
 
 
-EdgeInfo SerializeEdgeInfo(const router::Router::EdgeInfo& info, const transport::TransportCatalogue& tc) {
+EdgeInfo SerializeEdgeInfo(const router::EdgeInfo& info, const transport::TransportCatalogue& tc) {
 	EdgeInfo ret;
 	*ret.mutable_wait_info() = SerializeWaitInfo(info.wait, tc);  //.set_wait_stop_id(GetStopIndex(stops, info.wait.stop));
 	*ret.mutable_span_info() = SerializeSpanInfo(info.span, tc);
 	return ret;
 }
 
-RouterGraph SerializeRouterGraph(const router::Router::Graph& graph, const transport::TransportCatalogue& tc) {
+RouterGraph SerializeRouterGraph(const router::Graph& graph, const transport::TransportCatalogue& tc) {
 	RouterGraph ret;
 	*ret.mutable_graph() = SerializeGraph(graph.directed_weighted_graph);
 	for (const auto& edge_info : graph.edges) {
@@ -324,15 +324,15 @@ router::RouterSettings DeserializeRouterSettings(const RouterSettings& router_se
 	return ret;
 }
 
-router::Router::Wait DeserializeWaitInfo(const WaitInfo& wait, const transport::TransportCatalogue& tc) {
-	router::Router::Wait ret;
+router::Wait DeserializeWaitInfo(const WaitInfo& wait, const transport::TransportCatalogue& tc) {
+	router::Wait ret;
 	ret.stop = wait.stop_id();
 	ret.time = wait.time();
 	return ret;
 }
 
-router::Router::Span DeserializeSpanInfo(const SpanInfo& span, const transport::TransportCatalogue& tc) {
-	router::Router::Span ret;
+router::Span DeserializeSpanInfo(const SpanInfo& span, const transport::TransportCatalogue& tc) {
+	router::Span ret;
 
 	ret.bus = span.bus_id();
 	ret.count = span.stop_count();
@@ -340,15 +340,15 @@ router::Router::Span DeserializeSpanInfo(const SpanInfo& span, const transport::
 	return ret;
 }
 
-router::Router::EdgeInfo DeserializeEdgeInfo(const EdgeInfo& info, const transport::TransportCatalogue& tc) {
-	router::Router::EdgeInfo ret;
+router::EdgeInfo DeserializeEdgeInfo(const EdgeInfo& info, const transport::TransportCatalogue& tc) {
+	router::EdgeInfo ret;
 	ret.wait = DeserializeWaitInfo(info.wait_info(), tc);
 	ret.span = DeserializeSpanInfo(info.span_info(), tc);
 	return ret;
 }
 
-router::Router::Graph DeserializeRouterGraph(const RouterGraph& graph, const transport::TransportCatalogue& tc) {
-	router::Router::Graph ret;
+router::Graph DeserializeRouterGraph(const RouterGraph& graph, const transport::TransportCatalogue& tc) {
+	router::Graph ret;
 	ret.directed_weighted_graph = DeserializeGraph(graph.graph());
 
 	for (int i = 0; i < graph.edge_info_size(); ++i) {
