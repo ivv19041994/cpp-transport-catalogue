@@ -75,4 +75,8 @@ std::string RequestHandler::RenderMap() const {
 	return renderer_.Render();
 }
 
+const TransportCatalogue& RequestHandler::GetTransportCatalogue() const {
+	return db_;
+}
+
 }//namespace transport

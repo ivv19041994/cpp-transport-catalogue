@@ -100,8 +100,8 @@ namespace transport {
 				for (auto& [id, time, spans] : to_time_spans) {
 					if (id != from_id) {
 						AddEdge(graph, from_id, id, {
-								Wait{*from_it, settings_.bus_wait_time},
-								Span{&bus, time, spans }
+								Wait{ transport_catalogue_.GetStopIndex((*from_it)->name_), settings_.bus_wait_time},
+								Span{ transport_catalogue_.GetBusIndex( bus.name_), time, spans}
 							}
 						);
 					}

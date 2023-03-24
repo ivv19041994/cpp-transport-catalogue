@@ -47,7 +47,7 @@ namespace transport {
         std::optional<Router::RouteInfo> BuildRoute(const std::string_view from, const std::string_view to) const;
 
         std::string RenderMap() const;
-
+        const TransportCatalogue& GetTransportCatalogue() const;
     private:
         // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
         const TransportCatalogue& db_;

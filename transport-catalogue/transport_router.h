@@ -22,12 +22,12 @@ namespace router {
 	public:
 
 		struct Wait {
-			const Stop* stop;
+			size_t stop;
 			Time time;
 		};
 
 		struct Span {
-			const Bus* bus;
+			size_t bus;
 			Time time;
 			size_t count;
 		};

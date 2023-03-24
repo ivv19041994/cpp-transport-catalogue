@@ -280,14 +280,14 @@ RouterSettings SerializeRouterSettings(const router::RouterSettings& router_sett
 
 WaitInfo SerializeWaitInfo(const router::Router::Wait& wait, const transport::TransportCatalogue& tc) {
 	WaitInfo ret;
-	ret.set_stop_id(tc.GetStopIndex(wait.stop->name_));
+	ret.set_stop_id(wait.stop);
 	ret.set_time(wait.time);
 	return ret;
 }
 
 SpanInfo SerializeSpanInfo(const router::Router::Span& span, const transport::TransportCatalogue& tc) {
 	SpanInfo ret;
-	ret.set_bus_id(tc.GetBusIndex(span.bus->name_));
+	ret.set_bus_id(span.bus);
 	ret.set_stop_count(span.count);
 	ret.set_time_in_bus(span.time);
 	return ret;
@@ -326,7 +326,7 @@ router::RouterSettings DeserializeRouterSettings(const RouterSettings& router_se
 
 router::Router::Wait DeserializeWaitInfo(const WaitInfo& wait, const transport::TransportCatalogue& tc) {
 	router::Router::Wait ret;
-	ret.stop = &tc.GetStops()[wait.stop_id()];
+	ret.stop = wait.stop_id();
 	ret.time = wait.time();
 	return ret;
 }
@@ -334,7 +334,7 @@ router::Router::Wait DeserializeWaitInfo(const WaitInfo& wait, const transport::
 router::Router::Span DeserializeSpanInfo(const SpanInfo& span, const transport::TransportCatalogue& tc) {
 	router::Router::Span ret;
 
-	ret.bus = &tc.GetBuses()[span.bus_id()];
+	ret.bus = span.bus_id();
 	ret.count = span.stop_count();
 	ret.time = span.time_in_bus();
 	return ret;
