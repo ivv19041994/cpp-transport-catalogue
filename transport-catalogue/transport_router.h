@@ -68,7 +68,7 @@ namespace router {
 		const TransportCatalogue& transport_catalogue_;
 		RouterSettings settings_;
 		Speed bus_velocity_meters_per_min_;
-		std::unordered_map<const Stop*, graph::VertexId> stop_to_vertex_;
+		//std::unordered_map<const Stop*, graph::VertexId> stop_to_vertex_;
 		Graph graph_;
 		graph::Router<Time> router_;
 

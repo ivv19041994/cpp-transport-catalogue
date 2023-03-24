@@ -10,7 +10,7 @@ namespace transport {
 			: transport_catalogue_{ transport_catalogue }
 			, settings_{ settings }
 			, bus_velocity_meters_per_min_{ settings_.bus_velocity * 1000 / 60 }
-			, stop_to_vertex_{ StopToVertex() }
+			//, stop_to_vertex_{ StopToVertex() }
 			, graph_{ BuildGraph() }
 			, router_{ graph_.directed_weighted_graph } {
 		}
@@ -18,7 +18,7 @@ namespace transport {
 		Router::Router(const TransportCatalogue& transport_catalogue, RouterSettings settings, Graph graph) : transport_catalogue_{ transport_catalogue }
 			, settings_{ settings }
 			, bus_velocity_meters_per_min_{ settings_.bus_velocity * 1000 / 60 }
-			, stop_to_vertex_{ StopToVertex() }
+			//, stop_to_vertex_{ StopToVertex() }
 			, graph_{ std::move(graph)}
 			, router_{ graph_.directed_weighted_graph } {
 
@@ -90,8 +90,8 @@ namespace transport {
 
 			for (auto from_it = stop_begin, to_it = from_it++; from_it != stop_end; ++to_it, ++from_it) {
 				Time from_to_time = GetTime(*from_it, *to_it);
-				graph::VertexId to_id = stop_to_vertex_.at(*to_it);
-				graph::VertexId from_id = stop_to_vertex_.at(*from_it);
+				graph::VertexId to_id = transport_catalogue_.GetStopIndex((*to_it)->name_);// stop_to_vertex_.at(*to_it);
+				graph::VertexId from_id = transport_catalogue_.GetStopIndex((*from_it)->name_);//stop_to_vertex_.at(*from_it);
 				for (auto& [id, time, spans] : to_time_spans) {
 					time += from_to_time;
 					++spans;
@@ -143,7 +143,7 @@ namespace transport {
 		}
 
 		std::optional<Router::RouteInfo> Router::BuildRoute(const Stop* from, const Stop* to) const {
-			auto route = router_.BuildRoute(stop_to_vertex_.at(from), stop_to_vertex_.at(to));
+			auto route = router_.BuildRoute(transport_catalogue_.GetStopIndex(from->name_), transport_catalogue_.GetStopIndex(to->name_));
 			if (!route) {
 				return std::nullopt;
 			}
