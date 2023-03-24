@@ -27,7 +27,7 @@ Graph SerializeGraph(const graph::DirectedWeightedGraph<double>& graph);
 graph::DirectedWeightedGraph<double> DeserializeGraph(const Graph& graph);
 
 Router SerializeRouter(const router::Router& router);
-router::Router DeserializeRouter(const Router& router, const transport::TransportCatalogue& tc);
+router::Router DeserializeRouter(const Router& router);
 
 }
 }

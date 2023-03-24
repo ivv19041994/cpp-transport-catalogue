@@ -51,12 +51,15 @@ int main(int argc, char* argv[]) {
 			throw std::logic_error("Data base is broken");
 		}
 		
-		TransportCatalogue tc = transport::serialize::DeserializeBase(load.base());
-		transport::renderer::RenderSettings render_settings = transport::serialize::DeserializeRenderSettings(load.render_settings());
+		transport::json::Base base{
+			transport::serialize::DeserializeBase(load.base()),
+			transport::serialize::DeserializeRenderSettings(load.render_settings()),
+			transport::serialize::DeserializeRouter(load.router())
+		};
 
-		transport::json::InputStatReader reader{render_settings, transport::serialize::DeserializeRouter(load.router(), tc)};
-		reader(document, cout, tc);
-        // process requests here
+		transport::json::StatReader reader{ base };
+
+		reader(document).GetRoot().Print(cout);
 
     } else {
         PrintUsage();
