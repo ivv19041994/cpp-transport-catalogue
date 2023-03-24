@@ -91,17 +91,14 @@ void InputStatReader::operator()(const Document& document, std::ostream& os, tra
 	const Dict& dict = root.AsDict();
 
 	if (dict.count("render_settings")) {
-		//LOG_LIFE_TIME_DURATION("render_settings");
 		render_settings_ = ParseRenderSettings(dict.at("render_settings"));
 	}
 
 	if (dict.count("routing_settings")) {
-		//LOG_LIFE_TIME_DURATION("routing_settings");
 		router_settings_ = ParseRouterSettings(dict.at("routing_settings"));
 	}
 	
 	if (dict.count("base_requests")) {
-		//LOG_LIFE_TIME_DURATION("base_requests");
 		InputReader(dict.at("base_requests"), transport_catalogue);
 	}
 	if(router_settings_)
@@ -393,6 +390,63 @@ const std::optional<RenderSettings>& InputStatReader::GetRenderSettings() const 
 		});
 	return ::json::Node{ move(result) };
 }*/
+
+Base BaseReader::operator()(const Document& document) {
+	const Node& root = document.GetRoot();
+	const Dict& dict = root.AsDict();
+
+	render_settings_ = ParseRenderSettings(dict.at("render_settings"));
+	router_settings_ = ParseRouterSettings(dict.at("routing_settings"));
+	InputReader(dict.at("base_requests"));
+	router_.emplace(std::ref(transport_catalogue_), router_settings_);
+	return {std::move(transport_catalogue_), render_settings_ , std::move(*router_)};
+}
+
+void BaseReader::InputReader(const Node& input_node) {
+	const Array& buses_stops = input_node.AsArray();
+	vector<const Node*> buses;
+	vector<const Node*> stops;
+	buses.reserve(buses_stops.size());
+	stops.reserve(buses_stops.size());
+	//unordered_map<string, unordered_map<string, size_t>> length_from_to;
+	for (const Node& node : buses_stops) {
+		const Dict& dict = node.AsDict();
+
+		if (dict.at("type") == "Stop"s) {
+			stops.push_back(&node);
+			transport_catalogue_.AddStop(dict.at("name").AsString(),
+				geo::Coordinates{ dict.at("latitude").AsDouble(), dict.at("longitude").AsDouble() });
+		}
+		else if (dict.at("type") == "Bus"s) {
+			buses.push_back(&node);
+		}
+	}
+
+	for (auto& bus : buses) {
+		const Dict& dict = bus->AsDict();
+		std::vector<std::string> stop_names;
+		const Array& stops = dict.at("stops").AsArray();
+		stop_names.resize(stops.size());
+
+		transform(stops.begin(), stops.end(), stop_names.begin(), [](auto& node) {
+			return node.AsString();
+			});
+
+		transport_catalogue_.AddBus(dict.at("name").AsString(), dict.at("is_roundtrip").AsBool(), stop_names);
+	}
+
+	std::unordered_map<std::string, std::unordered_map<std::string, size_t>> length_from_to;
+	for (auto& stop : stops) {
+		const Dict& dict = stop->AsDict();
+		const Dict& other_stops = dict.at("road_distances").AsDict();
+		const string& name = dict.at("name").AsString();
+		for (auto& [other_name, node_len] : other_stops) {
+			length_from_to[name][other_name] = node_len.AsInt();
+		}
+	}
+
+	transport_catalogue_.SetLengthBetweenStops(length_from_to);
+}
 
 
 

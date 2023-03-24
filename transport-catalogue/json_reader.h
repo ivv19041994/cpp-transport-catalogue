@@ -48,5 +48,24 @@ namespace transport {
 			Node MapRequest(const Dict& request, const RequestHandler& request_handler);
 			Node RouteRequest(const Dict& request, const RequestHandler& request_handler);
 		};
+
+		struct Base {
+			transport::TransportCatalogue transport_catalogue;
+			RenderSettings render_settings;
+			Router router;
+		};
+
+		class BaseReader {
+		public:
+			Base operator()(const Document& document);
+		private:
+			transport::TransportCatalogue transport_catalogue_;
+			RenderSettings render_settings_;
+			RouterSettings router_settings_;
+			std::optional<Router> router_;
+
+			void InputReader(const Node& input_node);
+
+		};
 	}
 }

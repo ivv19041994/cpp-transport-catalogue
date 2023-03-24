@@ -36,12 +36,12 @@ int main(int argc, char* argv[]) {
 	.AsString();
 
     if (mode == "make_base"sv) {
-		TransportCatalogue tc;
-		
-		transport::json::InputStatReader reader{};
-		reader(document, cout, tc);
+
+		transport::json::BaseReader reader{};
+
+		auto base = reader(document);
 		fstream file(db_path, ios::binary | ios::out);
-        transport::serialize::SaveTransportCatalogueTo(tc, *reader.GetRenderSettings(), *reader.GetRouter(), file);
+        transport::serialize::SaveTransportCatalogueTo(base.transport_catalogue, base.render_settings, base.router, file);
 		
     } else if (mode == "process_requests"sv) {
 		fstream file(db_path, ios::binary | ios::in);
