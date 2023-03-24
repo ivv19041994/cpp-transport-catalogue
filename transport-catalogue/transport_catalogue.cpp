@@ -11,10 +11,10 @@ namespace transport {
 	}
 
 	void TransportCatalogue::AddStop(std::string name, geo::Coordinates coordinates) {
-        
+		size_t id = stops_storage_.size();
 		stops_storage_.push_back(Stop{move(name), move(coordinates)});
 		Stop* pstop = &stops_storage_.back();
-		stops_[pstop->name_] = pstop;
+		stops_[pstop->name_] = id;
 		buses_of_stop_[pstop];
 	}
 
@@ -47,22 +47,19 @@ namespace transport {
 		return bus->circular_ ? res : res * 2;
 	}
 
+	size_t TransportCatalogue::GetLengthFromTo(size_t from_id, size_t to_id) const {
+		return GetLengthFromTo(&stops_storage_[from_id], &stops_storage_[to_id]);
+	}
+
 	size_t TransportCatalogue::GetLengthFromTo(const Stop* from, const Stop* to) const {
-		//try {
-			auto it = length_from_to_.find({ from, to }); 
+		auto it = length_from_to_.find({ from, to }); 
+		if(it == length_from_to_.end()) {
+			it = length_from_to_.find({ to, from });
 			if(it == length_from_to_.end()) {
-				it = length_from_to_.find({ to, from });
-				if(it == length_from_to_.end()) {
-                    return 0;
-                }
-			}
-			return it->second;
-			
-			//return length_from_to_.at({ from, to });
-		//}
-		//catch (const out_of_range& e) {
-		//	return 0;
-		//}
+                return 0;
+            }
+		}
+		return it->second;
 	}
 
 	size_t TransportCatalogue::GetLength(const Bus* bus) const {
@@ -100,28 +97,43 @@ namespace transport {
 		return res;
 	}
 
-	const Bus* TransportCatalogue::GetBus(const std::string_view route_name) const {
+	const Bus* TransportCatalogue::GetBus(const std::string_view route_name) const noexcept {
 		if(buses_.count(route_name) == 0) {
             return nullptr;
         }
 
-		return buses_.at(route_name);
+		return &buses_storage_[buses_.at(route_name)];
 	}
 
-	const Stop* TransportCatalogue::GetStop(const std::string_view stop_name) const {
+	size_t TransportCatalogue::GetBusIndex(const std::string_view bus_name) const noexcept {
+		if (buses_.count(bus_name) == 0) {
+			return buses_.size();
+		}
+
+		return buses_.at(bus_name);
+	}
+
+	const Stop* TransportCatalogue::GetStop(const std::string_view stop_name) const noexcept {
 		if(stops_.count(stop_name) == 0) {
             return nullptr;
         }
 
+		return &stops_storage_[stops_.at(stop_name)];
+	}
+
+	size_t TransportCatalogue::GetStopIndex(const std::string_view stop_name) const noexcept {
+		if (stops_.count(stop_name) == 0) {
+			return stops_.size();
+		}
 		return stops_.at(stop_name);
 	}
 
 	void TransportCatalogue::SetLengthBetweenStops(const std::unordered_map<std::string, std::unordered_map<std::string, size_t>>& length_from_to) {
 		
 		for (auto& [from, to_map] : length_from_to) {
-			Stop* pfrom = stops_[from];
+			const Stop* pfrom = GetStop(from);
 			for (auto& [to, length] : to_map) {
-				Stop* pto = stops_[to];
+				const Stop* pto = GetStop(to);
 				length_from_to_[{pfrom, pto}] = length;
 				pair pto_pfrom = { pto, pfrom };
 				if (length_from_to_.count(pto_pfrom) == 0) {

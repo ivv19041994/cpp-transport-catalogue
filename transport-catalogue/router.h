@@ -76,13 +76,13 @@ namespace graph {
         }
 
         static constexpr Weight ZERO_WEIGHT{};
-        const Graph& graph_;
+        const Graph* graph_;
         RoutesInternalData routes_internal_data_;
     };
 
     template <typename Weight>
     Router<Weight>::Router(const Graph& graph)
-        : graph_(graph)
+        : graph_(&graph)
         , routes_internal_data_(graph.GetVertexCount(),
             std::vector<std::optional<RouteInternalData>>(graph.GetVertexCount()))
     {
@@ -105,7 +105,7 @@ namespace graph {
         std::vector<EdgeId> edges;
         for (std::optional<EdgeId> edge_id = route_internal_data->prev_edge;
             edge_id;
-            edge_id = routes_internal_data_[from][graph_.GetEdge(*edge_id).from]->prev_edge)
+            edge_id = routes_internal_data_[from][graph_->GetEdge(*edge_id).from]->prev_edge)
         {
             edges.push_back(*edge_id);
         }
