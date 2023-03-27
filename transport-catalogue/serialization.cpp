@@ -51,7 +51,7 @@ transport::TransportCatalogue DeserializeTransportCatalogue(const TransportCatal
 	return transport_catalogue;
 }
 
-Stop Create(const transport::Stop stop) {
+Stop SerializeStop(const transport::Stop stop) {
 	Stop ret;
 	ret.set_latitude(stop.coordinates_.lat);
 	ret.set_longitude(stop.coordinates_.lng);
@@ -59,67 +59,72 @@ Stop Create(const transport::Stop stop) {
 	return ret;
 }
 
-template<typename C, typename T>
-size_t GetContainerIndex(const C& container, const T* pointer) {
-	size_t ret = 0;
-	for (const auto& obj : container) {
-		if (&obj == pointer) {
-			return ret;
-		}
-		++ret;
-	}
-	assert(false);
-	return ret;
-}
-
-TransportCatalogue SerializeTransportCatalogue(const transport::TransportCatalogue& transport_catalogue) {
-	TransportCatalogue ret;
-	
-	const std::deque<transport::Stop>& stops = transport_catalogue.GetStops();
-	for(auto& stop: stops) {
-		*ret.add_stop() = Create(stop);
-	}
+std::unordered_map<const transport::Stop*, std::unordered_map<const transport::Stop*, size_t>> 
+GetUniqueMapMap(const transport::TransportCatalogue& transport_catalogue) {
 	const auto& length_map = transport_catalogue.GetLengthMap();
-	
+
 	std::unordered_map<const transport::Stop*, std::unordered_map<const transport::Stop*, size_t>> uniq_len;
-	for(const auto&[from_to, len]: length_map) {
+	for (const auto& [from_to, len] : length_map) {
 		const transport::Stop* from = from_to.first;
 		const transport::Stop* to = from_to.second;
 		auto it_to = uniq_len.find(to);
-		if(it_to != uniq_len.end()) {
+		if (it_to != uniq_len.end()) {
 			auto it_from = it_to->second.find(from);
-			if(it_from != it_to->second.end()) {
-				if(it_from->second == len) {
+			if (it_from != it_to->second.end()) {
+				if (it_from->second == len) {
 					continue;
 				}
 			}
 		}
 		uniq_len[from][to] = len;
 	}
-	
-	for(const auto&[pfrom, umap]: uniq_len) {
+	return uniq_len;
+}
+
+void AddRoadDistance(TransportCatalogue& output_tc, const transport::TransportCatalogue& transport_catalogue) {
+	std::unordered_map<const transport::Stop*, std::unordered_map<const transport::Stop*, size_t>> uniq_len
+		= GetUniqueMapMap(transport_catalogue);
+
+	for (const auto& [pfrom, umap] : uniq_len) {
 		size_t from = transport_catalogue.GetStopIndex(pfrom->name_);
-		
-		for(const auto&[pto, len]: umap) {
+
+		for (const auto& [pto, len] : umap) {
 			size_t to = transport_catalogue.GetStopIndex(pto->name_);
 			uint32_t distance = (static_cast<uint32_t>(to) & 0x7FF) | (static_cast<uint32_t>(len) << 11);
-			ret.mutable_stop(static_cast<int>(from))->add_road_distance(distance);
+			output_tc.mutable_stop(static_cast<int>(from))->add_road_distance(distance);
 		}
 	}
-	
-	for(const transport::Bus& bus: transport_catalogue.GetBuses()) {
-		Bus b;
-		b.set_name(bus.name_);
-		b.set_is_roundtrip(bus.circular_);
-	
-		for(const transport::Stop* stop: bus.stops_) {
+}
+
+void AddStops(TransportCatalogue& output_tc, const transport::TransportCatalogue& transport_catalogue) {
+	const std::deque<transport::Stop>& stops = transport_catalogue.GetStops();
+	for (auto& stop : stops) {
+		*output_tc.add_stop() = SerializeStop(stop);
+	}
+}
+
+void AddBuses(TransportCatalogue& output_tc, const transport::TransportCatalogue& transport_catalogue) {
+	for (const transport::Bus& bus : transport_catalogue.GetBuses()) {
+		Bus proto_bus;
+		proto_bus.set_name(bus.name_);
+		proto_bus.set_is_roundtrip(bus.circular_);
+
+		for (const transport::Stop* stop : bus.stops_) {
 			auto stop_id = transport_catalogue.GetStopIndex(stop->name_);
-			b.add_stop_id(static_cast<uint32_t>(stop_id));
+			proto_bus.add_stop_id(static_cast<uint32_t>(stop_id));
 		}
-		*ret.add_bus() = std::move(b);
+		*output_tc.add_bus() = std::move(proto_bus);
 	}
+}
+
+TransportCatalogue SerializeTransportCatalogue(const transport::TransportCatalogue& transport_catalogue) {
+	TransportCatalogue ret_transport_catalogue;
 	
-	return ret;
+	AddStops(ret_transport_catalogue, transport_catalogue);
+	AddRoadDistance(ret_transport_catalogue, transport_catalogue);
+	AddBuses(ret_transport_catalogue, transport_catalogue);
+	
+	return ret_transport_catalogue;
 }
 
 void SaveTransportCatalogueTo(
